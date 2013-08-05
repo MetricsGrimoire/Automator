@@ -90,7 +90,6 @@ It is capable of executing the following tools (remember they are optional):
 + IRC Analysis
 + VizGrimoireR scripts
 
-https://bugs.launchpad.net/openstack
 
 
 

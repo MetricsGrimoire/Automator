@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2012 Bitergia
+# Copyright (C) 2012-2013 Bitergia
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,6 +36,8 @@ import time
 import distutils.dir_util
 
 from optparse import OptionGroup, OptionParser
+from ConfigParser import SafeConfigParser
+
 
 
 # conf variables from file(see read_main_conf)
@@ -48,6 +50,19 @@ scm_dir = ''#os.getcwd() + '/../scm/'
 conf_dir = ''#os.getcwd() + '/../conf/'
 json_dir = ''
 production_dir = ''
+tools = {
+    'scm' :'/usr/local/bin/cvsanaly2',
+    'its': '/usr/local/bin/bicho',
+    'scr': '/usr/local/bin/bicho',
+    'mls': '/usr/local/bin/mlstats',
+    'irc': '/usr/local/bin/irc_analysis.py',
+    'r': '/usr/bin/R',
+    'git': '/usr/bin/git',
+    'mysqldump': '/usr/bin/mysqldump',
+    'compress': '/usr/bin/7zr',
+    'rm': '/bin/rm',
+    'rsync': '/usr/bin/rsync'
+}
 
 def get_options():     
     parser = OptionParser(usage='Usage: %prog [options]',
@@ -56,6 +71,8 @@ def get_options():
     
     parser.add_option('-d','--dir', dest='project_dir',
                      help='Path with the configuration of the project', default=None)
+    parser.add_option('-s','--section', dest='section',
+                     help='Section to be executed', default=None)
 
     (ops, args) = parser.parse_args()
 
@@ -63,29 +80,26 @@ def get_options():
         parser.print_help()
         print("Project dir is required")
         sys.exit(1)
-    
     return ops
 
 def initialize_globals(pdir):
     global project_dir
     global msg_body
     global scm_dir
+    global irc_dir
     global conf_dir
     global json_dir
     global production_dir
     
-    project_dir = pdir     
+    project_dir = pdir
     msg_body = project_dir + '/log/launch.log'
     scm_dir = project_dir + '/scm/'
+    irc_dir = project_dir + '/irc/'
     conf_dir = project_dir + '/conf/'
     json_dir = project_dir + '/json/'
     production_dir = project_dir + '/production/'
 
 def read_main_conf():
-
-    from ConfigParser import SafeConfigParser
-    import codecs
-    
     parser = SafeConfigParser()
     conf_file = project_dir + '/conf/main.conf'
     fd = open(conf_file, 'r')
@@ -117,9 +131,24 @@ def update_scm():
         compose_msg(r + " pull ended")
     compose_msg("[OK] SCM updated")
 
+def check_tool(cmd):
+    return os.path.isfile(cmd) and os.access(cmd, os.X_OK)
+    return True
+
+def check_tools():
+    tools_ok = True
+    for tool in tools:
+        if not check_tool(tools[tool]):
+            compose_msg(tools[tool]+" not found or not executable.")
+            print (tools[tool]+" not found or not executable.")
+            tools_ok = False
+    if not tools_ok: print ("Missing tools. Some reports could not be created.")
+
 def launch_cvsanaly():
     # using the conf executes cvsanaly for the repos inside scm dir
     if options.has_key('cvsanaly'):
+        if not check_tool(tools['scm']):
+            return
         update_scm()
         compose_msg("cvsanaly is being executed")
         launched = False
@@ -132,9 +161,9 @@ def launch_cvsanaly():
         for r in repos:
             launched = True
             os.chdir(scm_dir + r)
-            compose_msg("/usr/local/bin/cvsanaly2 -u %s -d %s --extensions=%s >> %s 2>&1" 
+            compose_msg(tools['scm'] + " -u %s -d %s --extensions=%s >> %s 2>&1"
                         %(db_user, db_name, extensions, msg_body))
-            os.system("/usr/local/bin/cvsanaly2 -u %s -d %s --extensions=%s >> %s 2>&1" 
+            os.system(tools['scm'] + " -u %s -d %s --extensions=%s >> %s 2>&1"
                       %(db_user, db_name, extensions, msg_body))
         
         if launched:
@@ -147,9 +176,12 @@ def launch_cvsanaly():
 def launch_bicho():
     # reads a conf file with all of the information and launches bicho
     if options.has_key('bicho'):
+        if not check_tool(tools['its']):
+            return
+
         compose_msg("bicho is being executed")
         launched = False
-        
+
         database = options['generic']['db_bicho']
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
@@ -175,9 +207,9 @@ def launch_bicho():
             if cont == last and log_table:
                 flags = flags + " -l"
 
-            compose_msg("/usr/local/bin/bicho --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s %s >> %s 2>&1" 
+            compose_msg(tools['its'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s %s >> %s 2>&1"
                         % (db_user, db_pass, database, str(delay), backend, t, flags, msg_body))
-            os.system("/usr/local/bin/bicho --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s %s >> %s 2>&1" 
+            os.system(tools['its'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s %s >> %s 2>&1"
                       % (db_user, db_pass, database, str(delay), backend, t, flags, msg_body))
         if launched:
             compose_msg("[OK] bicho executed")
@@ -189,6 +221,10 @@ def launch_bicho():
 def launch_gerrit():
     # reads a conf file with all of the information and launches bicho
     if options.has_key('gerrit'):
+
+        if not check_tool(tools['scr']):
+            return
+
         compose_msg("bicho (gerrit) is being executed")
         launched = False
 
@@ -224,9 +260,9 @@ def launch_gerrit():
             launched = True
             cont = cont + 1
 
-            compose_msg("/usr/local/bin/bicho --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s --gerrit-project=%s %s >> %s 2>&1"
+            compose_msg(tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s --gerrit-project=%s %s >> %s 2>&1"
                             % (db_user, db_pass, database, str(delay), backend, trackers[0], project, flags, msg_body))
-            os.system("/usr/local/bin/bicho --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s --gerrit-project=%s %s >> %s 2>&1"
+            os.system(tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s --gerrit-project=%s %s >> %s 2>&1"
                             % (db_user, db_pass, database, str(delay), backend, trackers[0], project, flags, msg_body))
 
         if launched:
@@ -239,31 +275,65 @@ def launch_gerrit():
 
 
 def launch_mlstats():
-    # reads a conf file with all of the information and launches bicho
     if options.has_key('mlstats'):
+        if not check_tool(tools['mls']):
+            return
+
         compose_msg("mlstats is being executed")
         launched = False
-        files = os.listdir(conf_dir)
         db_admin_user = options['generic']['db_user']        
         db_user = db_admin_user
         db_pass = options['generic']['db_password']
         db_name = options['generic']['db_mlstats']
         mlists = options['mlstats']['mailing_lists']
         for m in mlists.split(","):
-            compose_msg("/usr/local/bin/mlstats --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"\" \"%s\" >> %s 2>&1" 
+            launched = True
+            compose_msg(tools['mls'] + " --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"\" \"%s\" >> %s 2>&1"
                         %(db_user, db_pass, db_name, db_admin_user, m, msg_body))
-            os.system("/usr/local/bin/mlstats --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"\" \"%s\" >> %s 2>&1" 
-                      %(db_user, db_pass, db_name, db_admin_user, m, msg_body))            
-        compose_msg("[OK] mlstats executed")
-        print "executed"
+            os.system(tools['mls'] + " --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"\" \"%s\" >> %s 2>&1"
+                      %(db_user, db_pass, db_name, db_admin_user, m, msg_body))
+        if launched:
+            compose_msg("[OK] mlstats executed")
+        else:
+            compose_msg("[SKIPPED] mlstats not executed")
     else:
         compose_msg("[SKIPPED] mlstats was not executed, no conf available")
+
+def launch_irc():
+    if options.has_key('irc'):
+        if not check_tool(tools['irc']):
+            return
+
+        compose_msg("irc_analysis is being executed")
+        launched = False
+        db_admin_user = options['generic']['db_user']
+        db_user = db_admin_user
+        db_pass = options['generic']['db_password']
+        db_name = options['generic']['db_irc']
+        channels = os.listdir(irc_dir)
+        os.chdir(irc_dir)
+        for channel in channels:
+            launched = True
+            compose_msg(tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --dir=\"%s\" --channel=\"%s\">> %s 2>&1"
+                        % (db_user, db_pass, db_name, channel, channel, msg_body))
+            os.system(tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --dir=\"%s\" --channel=\"%s\">> %s 2>&1"
+                        %(db_user, db_pass, db_name, channel, channel, msg_body))
+        if launched:
+            compose_msg("[OK] irc_analysis executed")
+        else:
+            compose_msg("[SKIPPED] irc_analysis not executed")
+    else:
+        compose_msg("[SKIPPED] irc_analysis was not executed, no conf available")
+
 
 def launch_rscripts():
     # reads data about r scripts for a conf file and execute it
     if options.has_key('r'):
+        if not check_tool(tools['r']):
+            return
+
         compose_msg("R scripts being launched")
- 
+
         script = options['r']['rscript']
         path = options['r']['rscripts_path']
         r_libs = options['r']['r_libs']
@@ -271,6 +341,7 @@ def launch_rscripts():
         db_mlstats = options['generic']['db_mlstats']
         db_bicho = options['generic']['db_bicho']
         db_gerrit = options['generic']['db_gerrit']
+        db_irc = options['generic']['db_irc']
         today = time.strftime('%Y-%m-%d')
         ddir = json_dir
         compose_msg("R_LIBS=%s ./%s %s %s %s %s %s %s %s >> %s 2>&1" %
@@ -293,19 +364,34 @@ def launch_identity_scripts():
         db_scm = options['generic']['db_cvsanaly']
         db_its = options['generic']['db_bicho']
         db_mls = options['generic']['db_mlstats']
+        db_irc = options['generic']['db_irc']
         db_user = options['generic']['db_user']
 
         # we launch cvsanaly against the repos
 
-        compose_msg("%s/unifypeople.py -u %s -d %s >> %s 2>&1" % (idir, db_user, db_scm, msg_body))
-        os.system("%s/unifypeople.py -u %s -d %s >> %s 2>&1" % (idir, db_user, db_scm, msg_body))
-        
-        compose_msg("%s/its2identities.py -u %s --db-database-its=%s --db-database-ids=%s >> %s 2>&1" % (idir, db_user, db_its, db_scm, msg_body))
-        os.system("%s/its2identities.py -u %s --db-database-its=%s --db-database-ids=%s >> %s 2>&1" % (idir, db_user, db_its, db_scm, msg_body))
+        if db_scm:
+            compose_msg("%s/unifypeople.py -u %s -d %s >> %s 2>&1" % (idir, db_user, db_scm, msg_body))
+            os.system("%s/unifypeople.py -u %s -d %s >> %s 2>&1" % (idir, db_user, db_scm, msg_body))
 
-        compose_msg("%s/mls2identities.py -u %s --db-database-mls=%s --db-database-ids=%s >> %s 2>&1" % (idir, db_user, db_mls, db_scm, msg_body))
-        os.system("%s/mls2identities.py -u %s --db-database-mls=%s --db-database-ids=%s >> %s 2>&1" % (idir, db_user, db_mls, db_scm, msg_body))
-        compose_msg("[OK] Identity scripts executed")        
+        if db_its:
+            compose_msg("%s/its2identities.py -u %s --db-database-its=%s --db-database-ids=%s >> %s 2>&1"
+                        % (idir, db_user, db_its, db_scm, msg_body))
+            os.system("%s/its2identities.py -u %s --db-database-its=%s --db-database-ids=%s >> %s 2>&1"
+                      % (idir, db_user, db_its, db_scm, msg_body))
+
+        if db_mls:
+            compose_msg("%s/mls2identities.py -u %s --db-database-mls=%s --db-database-ids=%s >> %s 2>&1"
+                        % (idir, db_user, db_mls, db_scm, msg_body))
+            os.system("%s/mls2identities.py -u %s --db-database-mls=%s --db-database-ids=%s >> %s 2>&1"
+                      % (idir, db_user, db_mls, db_scm, msg_body))
+
+        if db_irc:
+            compose_msg("%s/irc2identities.py -u %s --db-database-mls=%s --db-database-ids=%s >> %s 2>&1"
+                        % (idir, db_user, db_mls, db_scm, msg_body))
+            os.system("%s/irc2identities.py -u %s --db-database-mls=%s --db-database-ids=%s >> %s 2>&1"
+                      % (idir, db_user, db_mls, db_scm, msg_body))
+
+        compose_msg("[OK] Identity scripts executed")
     else:
         compose_msg("[SKIPPED] Unify identity scripts not executed, no conf available")
 
@@ -326,9 +412,15 @@ def reset_log():
         fd.write('')
         fd.close()
 
-def commit_jsones():
+def launch_commit_jsones():
     # copy JSON files and commit + push them
     if options.has_key('git-production'):
+
+        if not check_tool(tools['git']):
+            return
+
+        compose_msg("Commiting new JSON files with git")
+
         destination = options['git-production']['destination_json']
         distutils.dir_util.copy_tree(json_dir, destination)
 
@@ -364,9 +456,14 @@ def commit_jsones():
 
         fd.close()
 
-def database_dump():
+def launch_database_dump():
     # copy and compression of database to be rsync with customers
     if options.has_key('db-dump'):
+
+        if not check_tool(tools['mysqldump']) or check_tool(tools['compress']) or check_tool(tools['rm']):
+            return
+
+        compose_msg("Dumping databases")
 
         # databases
         # this may fail if any of the four is not found
@@ -375,10 +472,12 @@ def database_dump():
         db_cvsanaly = options['generic']['db_cvsanaly']
         db_mlstats = options['generic']['db_mlstats']
         db_gerrit = options['generic']['db_gerrit']
+        db_irc = options['generic']['db_irc']
         dbs = [(db_bicho, 'tickets'),
                (db_cvsanaly, 'source_code'),
                (db_mlstats, 'mailing_lists'),
-               (db_gerrit, 'reviews')]
+               (db_gerrit, 'reviews'),
+               (db_irc, 'irc'),]
 
         fd = open(msg_body, 'a')
         destination = options['db-dump']['destination_db_dump']
@@ -391,7 +490,7 @@ def database_dump():
 
             fd_dump = open(dest_mysql_file, 'w')
             # Creation of dump file
-            pr = subprocess.Popen(['/usr/bin/mysqldump', '-u', db_user, db[0]],
+            pr = subprocess.Popen([tools['mysqldump'], '-u', db_user, db[0]],
                      stdout = fd_dump,
                      stderr = fd,
                      shell = False)
@@ -399,14 +498,14 @@ def database_dump():
             fd_dump.close()
 
             # Creation of compressed dump file
-            pr = subprocess.Popen(['/usr/bin/7zr', 'a', dest_7z_file, dest_mysql_file],
+            pr = subprocess.Popen([tools['compress'], 'a', dest_7z_file, dest_mysql_file],
                      stdout = fd,
                      stderr = fd,
                      shell = False)
             (out, error) = pr.communicate()
 
             # Remove not compressed file
-            pr = subprocess.Popen(['/bin/rm', dest_mysql_file],
+            pr = subprocess.Popen([tools['rm'], dest_mysql_file],
                      stdout = fd,
                      stderr = fd,
                      shell = False)
@@ -414,16 +513,19 @@ def database_dump():
 
         fd.close()
 
-
-
 def launch_rsync():
     # copy JSON files and commit + push them
     if options.has_key('rsync'):
 
+        if not check_tool(tools['rsync']):
+            return
+
+        compose_msg("rsync to production server")
+
         fd = open(msg_body, 'a')
 
         destination = options['rsync']['destination']
-        pr = subprocess.Popen(['/usr/bin/rsync','--rsh', 'ssh', '-zva', '--stats', '--progress', '--update' ,'--delete', production_dir, destination],
+        pr = subprocess.Popen([tools['rsync'],'--rsh', 'ssh', '-zva', '--stats', '--progress', '--update' ,'--delete', production_dir, destination],
                               stdout=fd, 
                               stderr=fd, 
                               shell=False)
@@ -433,7 +535,22 @@ def launch_rsync():
     else:
         compose_msg("[SKIPPED] rsync scripts not executed, no conf available")
     
-
+def launch_section(section):
+    print ("Launch only section " + section)
+    fn_section = {
+        'cvsanaly':launch_cvsanaly,
+        'bicho':launch_bicho,
+        'gerrit':launch_gerrit,
+        'mlstats':launch_mlstats,
+        'irc': launch_irc,
+        'identities': launch_identity_scripts,
+        'r':launch_rscripts,
+        'git-production':launch_commit_jsones,
+        'db-dump':launch_database_dump,
+        'rsync':launch_rsync
+    }
+    fn_section[section]()
+    return
 
 if __name__ == '__main__':
     opt = get_options()   
@@ -444,16 +561,22 @@ if __name__ == '__main__':
     
     read_main_conf()
     
-    launch_cvsanaly()
-    launch_bicho()
-    launch_gerrit()
-    launch_mlstats()
-    launch_identity_scripts()
-    launch_rscripts()
+    check_tools()
 
-    commit_jsones()
-    database_dump()
-    launch_rsync()
+    if opt.section is not None:
+        launch_section(opt.section)
+    else:
+        launch_cvsanaly()
+        launch_bicho()
+        launch_gerrit()
+        launch_mlstats()
+        launch_irc()
+        launch_identity_scripts()
+        launch_rscripts()
+
+        launch_commit_jsones()
+        launch_database_dump()
+        launch_rsync()
     
     compose_msg("Process finished correctly ...")
 

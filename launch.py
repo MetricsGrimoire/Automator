@@ -90,6 +90,8 @@ def initialize_globals(pdir):
     global conf_dir
     global json_dir
     global production_dir
+    global identities_dir
+    global r_dir
     
     project_dir = pdir
     msg_body = project_dir + '/log/launch.log'
@@ -98,6 +100,8 @@ def initialize_globals(pdir):
     conf_dir = project_dir + '/conf/'
     json_dir = project_dir + '/json/'
     production_dir = project_dir + '/production/'
+    identities_dir = project_dir + '/tools/VizGrimoireR/misc/'
+    r_dir = project_dir + '/tools/VizGrimoireR/vizGrimoireJS/'
 
 def read_main_conf():
     parser = SafeConfigParser()
@@ -335,7 +339,8 @@ def launch_rscripts():
         compose_msg("R scripts being launched")
 
         script = options['r']['rscript']
-        path = options['r']['rscripts_path']
+        # path = options['r']['rscripts_path']
+        path = r_dir
         r_libs = options['r']['r_libs']
         db_cvsanaly = options['generic']['db_cvsanaly']
         db_mlstats = options['generic']['db_mlstats']
@@ -360,18 +365,21 @@ def launch_identity_scripts():
     # using the conf executes cvsanaly for the repos inside scm dir
     if options.has_key('identities'):
         compose_msg("Unify identity scripts are being executed")
-        idir = options['identities']['iscripts_path']
+        # idir = options['identities']['iscripts_path']
+        idir = identities_dir
         db_scm = options['generic']['db_cvsanaly']
         db_its = options['generic']['db_bicho']
         db_mls = options['generic']['db_mlstats']
         db_irc = options['generic']['db_irc']
         db_user = options['generic']['db_user']
 
-        # we launch cvsanaly against the repos
-
+        # TODO: -i no is needed in first execution
         if db_scm:
             compose_msg("%s/unifypeople.py -u %s -d %s >> %s 2>&1" % (idir, db_user, db_scm, msg_body))
             os.system("%s/unifypeople.py -u %s -d %s >> %s 2>&1" % (idir, db_user, db_scm, msg_body))
+            # Companies are needed in Top because bots are included in a company
+            compose_msg("%s/domains_analysis.py -u %s -d %s >> %s 2>&1" % (idir, db_user, db_scm, msg_body))
+            os.system("%s/domains_analysis.py -u %s -d %s >> %s 2>&1" % (idir, db_user, db_scm, msg_body))
 
         if db_its:
             compose_msg("%s/its2identities.py -u %s --db-database-its=%s --db-database-ids=%s >> %s 2>&1"
@@ -386,10 +394,10 @@ def launch_identity_scripts():
                       % (idir, db_user, db_mls, db_scm, msg_body))
 
         if db_irc:
-            compose_msg("%s/irc2identities.py -u %s --db-database-mls=%s --db-database-ids=%s >> %s 2>&1"
-                        % (idir, db_user, db_mls, db_scm, msg_body))
-            os.system("%s/irc2identities.py -u %s --db-database-mls=%s --db-database-ids=%s >> %s 2>&1"
-                      % (idir, db_user, db_mls, db_scm, msg_body))
+            compose_msg("%s/irc2identities.py -u %s --db-database-irc=%s --db-database-ids=%s >> %s 2>&1"
+                        % (idir, db_user, db_irc, db_scm, msg_body))
+            os.system("%s/irc2identities.py -u %s --db-database-irc=%s --db-database-ids=%s >> %s 2>&1"
+                      % (idir, db_user, db_irc, db_scm, msg_body))
 
         compose_msg("[OK] Identity scripts executed")
     else:
@@ -460,7 +468,7 @@ def launch_database_dump():
     # copy and compression of database to be rsync with customers
     if options.has_key('db-dump'):
 
-        if not check_tool(tools['mysqldump']) or check_tool(tools['compress']) or check_tool(tools['rm']):
+        if not check_tool(tools['mysqldump']) or not check_tool(tools['compress']) or not check_tool(tools['rm']):
             return
 
         compose_msg("Dumping databases")
@@ -480,7 +488,7 @@ def launch_database_dump():
                (db_irc, 'irc'),]
 
         fd = open(msg_body, 'a')
-        destination = options['db-dump']['destination_db_dump']
+        destination = os.path.join(project_dir,options['db-dump']['destination_db_dump'])
 
 
         # it's supposed to have db_user as root user

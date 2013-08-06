@@ -20,7 +20,7 @@
 # Authors :
 #       Luis Cañas-Díaz <lcanas@bitergia.com>
 #       Daniel Izquierdo Cortázar <dizquierdo@bitergia.com>
-#       Alvaro del Castillo <acs@bitergia.com>
+#       Alvaro del Castillo San Felix <acs@bitergia.com>
 #
 # launch.py
 #
@@ -142,7 +142,7 @@ def launch_cvsanaly():
         else:
             compose_msg("[SKIPPED] cvsanaly was not executed")
     else:
-        compose_msg("cvsanaly not executed, no conf available")
+        compose_msg("[SKIPPED] cvsanaly not executed, no conf available")
 
 def launch_bicho():
     # reads a conf file with all of the information and launches bicho
@@ -184,7 +184,7 @@ def launch_bicho():
         else:
             compose_msg("[SKIPPED] bicho was not executed")
     else:
-        compose_msg("bicho not executed, no conf available")
+        compose_msg("[SKIPPED] bicho not executed, no conf available")
 
 def launch_gerrit():
     # reads a conf file with all of the information and launches bicho
@@ -234,7 +234,7 @@ def launch_gerrit():
         else:
             compose_msg("[SKIPPED] bicho (gerrit) not executed")
     else:
-        compose_msg("bicho (gerrit) not executed, no conf available")
+        compose_msg("[SKIPPED] bicho (gerrit) not executed, no conf available")
 
 
 
@@ -257,8 +257,7 @@ def launch_mlstats():
         compose_msg("[OK] mlstats executed")
         print "executed"
     else:
-        compose_msg("[SKIPPED] mlstats was not executed")
-        print "not executed"
+        compose_msg("[SKIPPED] mlstats was not executed, no conf available")
 
 def launch_rscripts():
     # reads data about r scripts for a conf file and execute it
@@ -284,7 +283,7 @@ def launch_rscripts():
 
         compose_msg("[OK] R scripts executed")
     else:
-        compose_msg("[SKIPPED] R scripts were not executed")
+        compose_msg("[SKIPPED] R scripts were not executed, no conf available")
 
 def launch_identity_scripts():
     # using the conf executes cvsanaly for the repos inside scm dir
@@ -431,6 +430,9 @@ def launch_rsync():
         (out, error) = pr.communicate()
 
         fd.close()
+    else:
+        compose_msg("[SKIPPED] rsync scripts not executed, no conf available")
+    
 
 
 if __name__ == '__main__':
@@ -452,6 +454,8 @@ if __name__ == '__main__':
     commit_jsones()
     database_dump()
     launch_rsync()
+    
+    compose_msg("Process finished correctly ...")
 
     # done, we sent the result
     project = options['generic']['project']

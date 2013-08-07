@@ -164,7 +164,7 @@ def launch_cvsanaly():
         # we launch cvsanaly against the repos
         repos = os.listdir(scm_dir)
         for r in repos:
-            if not os.path.isdir(r): continue 
+            if not os.path.isdir(scm_dir+r): continue 
             launched = True
             os.chdir(scm_dir + r)
             compose_msg(tools['scm'] + " -u %s -d %s --extensions=%s >> %s 2>&1"
@@ -319,7 +319,7 @@ def launch_irc():
         channels = os.listdir(irc_dir)
         os.chdir(irc_dir)
         for channel in channels:
-            if not os.path.isdir(channel): continue
+            if not os.path.isdir(irc_dir+channel): continue
             launched = True
             compose_msg(tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --dir=\"%s\" --channel=\"%s\">> %s 2>&1"
                         % (db_user, db_pass, db_name, channel, channel, msg_body))

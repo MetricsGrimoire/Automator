@@ -1,0 +1,35 @@
+In order to use this Automator sample project:
+
+* Create dbs
+
+echo "CREATE DATABASE acs_bicho_automatortest_1938 CHARACTER SET utf8 COLLATE utf8_unicode_ci" | mysql -u root
+echo "CREATE DATABASE acs_cvsanaly_automatortest_1938 CHARACTER SET utf8 COLLATE utf8_unicode_ci" | mysql -u root
+echo "CREATE DATABASE acs_gerrit_automatortest_1938 CHARACTER SET utf8 COLLATE utf8_unicode_ci" | mysql -u root
+echo "CREATE DATABASE acs_irc_automatortest_1938 CHARACTER SET utf8 COLLATE utf8_unicode_ci" | mysql -u root
+
+* Download SCM repos
+
+AutomatorTest/scm$ git clone https://gerrit.wikimedia.org/r/p/mediawiki/extensions/OpenID
+AutomatorTest/scm$ git clone https://gerrit.wikimedia.org/r/p/mediawiki/extensions/SolrStore
+
+* Download IRC logs
+
+AutomatorTest/irc$ wget http://bots.wmflabs.org/~wm-bot/logs/%23wikimedia-analytics/%23wikimedia-analytics.tar.gz
+AutomatorTest/irc$ wget http://bots.wmflabs.org/~wm-bot/logs/%23wikimedia-fundraising/%23wikimedia-fundraising.tar.gz
+AutomatorTest/irc$ mkdir wikimedia-analytics
+AutomatorTest/irc$ mkdir wikimedia-fundraising
+AutomatorTest/irc$ cd wikimedia-analytics/
+AutomatorTest/irc/wikimedia-analytics$ tar xfz ../#wikimedia-analytics.tar.gz 
+AutomatorTest/irc/wikimedia-fundraising$ tar xfz ../#wikimedia-fundraising.tar.gz
+
+* Download VizR
+
+AutomatorTest/tools$ git clone https://github.com/VizGrimoire/VizGrimoireR.git
+AutomatorTest/tools$ mkdir r-lib
+AutomatorTest/tools/VizGrimoireR$ R CMD INSTALL -l ../r-lib vizgrimoire
+
+and ready to execute automator: ./launch.py -d /home/acs/devel/Automator/AutomatorTest
+
+The metrics will be created in JSON format in: AutomatorTest/json/
+
+If you have issues please contact acs@bitergia.com.

@@ -52,7 +52,7 @@ cd ..
 # Publish dashboard
 cd production
 git add .
-git commit -m "First version of the Dashboard by init.sh script"
+git commit -m "Dashboard initial upload by init.sh script"
 git push
 cd ..
 

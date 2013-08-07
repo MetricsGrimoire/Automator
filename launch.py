@@ -352,13 +352,13 @@ def launch_rscripts():
         db_irc = options['generic']['db_irc']
         today = time.strftime('%Y-%m-%d')
         ddir = json_dir
-        compose_msg("R_LIBS=%s ./%s %s %s %s %s %s %s %s >> %s 2>&1" %
+        compose_msg("R_LIBS=%s ./%s %s %s %s %s %s %s %s %s >> %s 2>&1" %
                     (r_libs, script, db_cvsanaly, db_mlstats, db_bicho, 
-                     today, ddir, db_gerrit, msg_body, msg_body))
+                     today, ddir, db_gerrit, db_irc, msg_body, msg_body))
         os.chdir(path)
-        os.system("R_LIBS=%s ./%s %s %s %s %s %s %s %s >> %s 2>&1" %
+        os.system("R_LIBS=%s ./%s %s %s %s %s %s %s %s %s >> %s 2>&1" %
                   (r_libs, script, db_cvsanaly, db_mlstats, db_bicho, 
-                   today, ddir, db_gerrit, msg_body, msg_body))
+                   today, ddir, db_gerrit, db_irc, msg_body, msg_body))
 
         compose_msg("[OK] R scripts executed")
     else:
@@ -370,33 +370,33 @@ def launch_identity_scripts():
         compose_msg("Unify identity scripts are being executed")
         # idir = options['identities']['iscripts_path']
         idir = identities_dir
-        db_scm = options['generic']['db_cvsanaly']
-        db_its = options['generic']['db_bicho']
-        db_mls = options['generic']['db_mlstats']
-        db_irc = options['generic']['db_irc']
         db_user = options['generic']['db_user']
 
-        # TODO: -i no is needed in first execution
-        if db_scm:
+        if options['generic'].has_key('db_cvsanaly'):
+            # TODO: -i no is needed in first execution
+            db_scm = options['generic']['db_cvsanaly']
             compose_msg("%s/unifypeople.py -u %s -d %s >> %s 2>&1" % (idir, db_user, db_scm, msg_body))
             os.system("%s/unifypeople.py -u %s -d %s >> %s 2>&1" % (idir, db_user, db_scm, msg_body))
             # Companies are needed in Top because bots are included in a company
             compose_msg("%s/domains_analysis.py -u %s -d %s >> %s 2>&1" % (idir, db_user, db_scm, msg_body))
             os.system("%s/domains_analysis.py -u %s -d %s >> %s 2>&1" % (idir, db_user, db_scm, msg_body))
 
-        if db_its:
+        if options['generic'].has_key('db_bicho'):
+            db_its = options['generic']['db_bicho']
             compose_msg("%s/its2identities.py -u %s --db-database-its=%s --db-database-ids=%s >> %s 2>&1"
                         % (idir, db_user, db_its, db_scm, msg_body))
             os.system("%s/its2identities.py -u %s --db-database-its=%s --db-database-ids=%s >> %s 2>&1"
                       % (idir, db_user, db_its, db_scm, msg_body))
 
-        if db_mls:
+        if options['generic'].has_key('db_mlstats'):
+            db_mls = options['generic']['db_mlstats']
             compose_msg("%s/mls2identities.py -u %s --db-database-mls=%s --db-database-ids=%s >> %s 2>&1"
                         % (idir, db_user, db_mls, db_scm, msg_body))
             os.system("%s/mls2identities.py -u %s --db-database-mls=%s --db-database-ids=%s >> %s 2>&1"
                       % (idir, db_user, db_mls, db_scm, msg_body))
 
-        if db_irc:
+        if options['generic'].has_key('db_irc'):
+            db_irc = options['generic']['db_irc']
             compose_msg("%s/irc2identities.py -u %s --db-database-irc=%s --db-database-ids=%s >> %s 2>&1"
                         % (idir, db_user, db_irc, db_scm, msg_body))
             os.system("%s/irc2identities.py -u %s --db-database-irc=%s --db-database-ids=%s >> %s 2>&1"

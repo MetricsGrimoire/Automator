@@ -131,7 +131,7 @@ def update_scm():
     repos = os.listdir(scm_dir)
     for r in repos:
         if not os.path.isdir(r): continue
-        os.chdir(scm_dir + r)
+        os.chdir(os.path.join(scm_dir,r))
         os.system("git pull >> %s 2>&1" %(msg_body))
         compose_msg(r + " pull ended")
     compose_msg("[OK] SCM updated")
@@ -164,7 +164,7 @@ def launch_cvsanaly():
         # we launch cvsanaly against the repos
         repos = os.listdir(scm_dir)
         for r in repos:
-            if not os.path.isdir(scm_dir+r): continue 
+            if not os.path.isdir(os.path.join(scm_dir,r)): continue 
             launched = True
             os.chdir(scm_dir + r)
             compose_msg(tools['scm'] + " -u %s -d %s --extensions=%s >> %s 2>&1"
@@ -319,7 +319,7 @@ def launch_irc():
         channels = os.listdir(irc_dir)
         os.chdir(irc_dir)
         for channel in channels:
-            if not os.path.isdir(irc_dir+channel): continue
+            if not os.path.isdir(os.path.join(irc_dir,channel)): continue
             launched = True
             compose_msg(tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --dir=\"%s\" --channel=\"%s\">> %s 2>&1"
                         % (db_user, db_pass, db_name, channel, channel, msg_body))

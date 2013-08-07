@@ -432,7 +432,7 @@ def launch_commit_jsones():
 
         compose_msg("Commiting new JSON files with git")
 
-        destination = options['git-production']['destination_json']
+        destination = os.path.join(project_dir,options['git-production']['destination_json'])
         distutils.dir_util.copy_tree(json_dir, destination)
 
         fd = open(msg_body, 'a')

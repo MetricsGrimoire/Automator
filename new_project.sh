@@ -15,9 +15,6 @@ mkdir -p $1/production
 mkdir -p $1/scm
 mkdir -p $1/tools
 
-# DB dumps
-mkdir -p $1/production/browser/data/db/
-
 # Copy config template
 cp main.conf $1/conf
 

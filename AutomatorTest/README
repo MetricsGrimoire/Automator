@@ -1,6 +1,6 @@
 In order to use this Automator sample project execute:
 
-AutomatorTest$ ./init.sh
+AutomatorTest$ ./init-basic.sh
 
 and you are ready to execute automator: 
 

@@ -222,6 +222,7 @@ def launch_bicho():
         db_pass = options['generic']['db_password']
         delay = options['bicho']['delay']
         backend = options['bicho']['backend']
+        backend_user = backend_password = None
         if options['bicho'].has_key('backend_user'):
             backend_user = options['bicho']['backend_user']
         if options['bicho'].has_key('backend_password'):

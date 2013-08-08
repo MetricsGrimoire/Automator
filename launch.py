@@ -387,7 +387,7 @@ def launch_rscripts():
         if options['generic'].has_key('db_cvsanaly'):
             db_cvsanaly = options['generic']['db_cvsanaly']
         else:  db_cvsanaly = "none"
-        if options['generic'].has_key('db_mlstats'):    
+        if options['generic'].has_key('db_mlstats'):
             db_mlstats = options['generic']['db_mlstats']
         else:  db_mlstats = "none"
         if options['generic'].has_key('db_bicho'):
@@ -525,20 +525,23 @@ def launch_database_dump():
             return
 
         compose_msg("Dumping databases")
+        
+        dbs = []
 
         # databases
         # this may fail if any of the four is not found
         db_user = options['generic']['db_user']
-        db_bicho = options['generic']['db_bicho']
-        db_cvsanaly = options['generic']['db_cvsanaly']
-        db_mlstats = options['generic']['db_mlstats']
-        db_gerrit = options['generic']['db_gerrit']
-        db_irc = options['generic']['db_irc']
-        dbs = [(db_bicho, 'tickets'),
-               (db_cvsanaly, 'source_code'),
-               (db_mlstats, 'mailing_lists'),
-               (db_gerrit, 'reviews'),
-               (db_irc, 'irc'),]
+        
+        if options['generic'].has_key('db_bicho'):
+            dbs.append([options['generic']['db_bicho'], 'tickets']);
+        if options['generic'].has_key('db_cvsanaly'):
+            dbs.append([options['generic']['db_cvsanaly'],'source_code']);
+        if options['generic'].has_key('db_mlstats'):
+            dbs.append([options['generic']['db_mlstats'],'mailing_lists']);
+        if options['generic'].has_key('db_gerrit'):
+            dbs.append([options['generic']['db_gerrit'],'reviews']);
+        if options['generic'].has_key('db_irc'):
+            dbs.append([options['generic']['db_irc'],'irc']);
 
         fd = open(msg_body, 'a')
         destination = os.path.join(project_dir,options['db-dump']['destination_db_dump'])

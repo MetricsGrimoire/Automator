@@ -1,11 +1,5 @@
 #!/bin/sh
 
-# Create dbs
-echo "CREATE DATABASE acs_bicho_automatortest_1938 CHARACTER SET utf8 COLLATE utf8_unicode_ci" | mysql -u root
-echo "CREATE DATABASE acs_cvsanaly_automatortest_1938 CHARACTER SET utf8 COLLATE utf8_unicode_ci" | mysql -u root
-echo "CREATE DATABASE acs_gerrit_automatortest_1938 CHARACTER SET utf8 COLLATE utf8_unicode_ci" | mysql -u root
-echo "CREATE DATABASE acs_irc_automatortest_1938 CHARACTER SET utf8 COLLATE utf8_unicode_ci" | mysql -u root
-
 # Clone SCM repos
 cd scm
 git clone https://gerrit.wikimedia.org/r/p/mediawiki/extensions/OpenID

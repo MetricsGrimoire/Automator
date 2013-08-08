@@ -222,6 +222,10 @@ def launch_bicho():
         db_pass = options['generic']['db_password']
         delay = options['bicho']['delay']
         backend = options['bicho']['backend']
+        if options['bicho'].has_key('backend_user'):
+            backend_user = options['bicho']['backend_user']
+        if options['bicho'].has_key('backend_password'):
+            backend_password = options['bicho']['backend_password']
         trackers = options['bicho']['trackers']
         debug = options['bicho']['debug']
         log_table = options['bicho']['log_table']
@@ -242,10 +246,16 @@ def launch_bicho():
             if cont == last and log_table:
                 flags = flags + " -l"
 
-            compose_msg(tools['its'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s %s >> %s 2>&1"
-                        % (db_user, db_pass, database, str(delay), backend, t, flags, msg_body))
-            os.system(tools['its'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s %s >> %s 2>&1"
-                      % (db_user, db_pass, database, str(delay), backend, t, flags, msg_body))
+            if backend_user and backend_password:
+                compose_msg(tools['its'] + " --db-user-out=%s --db-password-out=%s --backend-user=%s --backend-password=%s --db-database-out=%s -d %s -b %s -u %s %s >> %s 2>&1"
+                            % (db_user, db_pass, backend_user, backend_password, database, str(delay), backend, t, flags, msg_body))
+                os.system(tools['its'] + " --db-user-out=%s --db-password-out=%s --backend-user=%s --backend-password=%s --db-database-out=%s -d %s -b %s -u %s %s >> %s 2>&1"
+                            % (db_user, db_pass, backend_user, backend_password, database, str(delay), backend, t, flags, msg_body))
+            else:
+                compose_msg(tools['its'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s %s >> %s 2>&1"
+                            % (db_user, db_pass, database, str(delay), backend, t, flags, msg_body))
+                os.system(tools['its'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s %s >> %s 2>&1"
+                          % (db_user, db_pass, database, str(delay), backend, t, flags, msg_body))
         if launched:
             compose_msg("[OK] bicho executed")
         else:
@@ -374,20 +384,31 @@ def launch_rscripts():
         # path = options['r']['rscripts_path']
         path = r_dir
         r_libs = options['r']['r_libs']
-        db_cvsanaly = options['generic']['db_cvsanaly']
-        db_mlstats = options['generic']['db_mlstats']
-        db_bicho = options['generic']['db_bicho']
-        db_gerrit = options['generic']['db_gerrit']
-        db_irc = options['generic']['db_irc']
+        if options['generic'].has_key('db_cvsanaly'):
+            db_cvsanaly = options['generic']['db_cvsanaly']
+        else:  db_cvsanaly = "none"
+        if options['generic'].has_key('db_mlstats'):    
+            db_mlstats = options['generic']['db_mlstats']
+        else:  db_mlstats = "none"
+        if options['generic'].has_key('db_bicho'):
+            db_bicho = options['generic']['db_bicho']
+        else:  db_bicho = "none"
+        if options['generic'].has_key('db_gerrit'):
+            db_gerrit = options['generic']['db_gerrit']
+        else:  db_gerrit = "none"
+        if options['generic'].has_key('db_irc'):
+            db_irc = options['generic']['db_irc']
+        else:  db_irc = "none"
+        bicho_backend = options['bicho']['backend']
         today = time.strftime('%Y-%m-%d')
         ddir = json_dir
-        compose_msg("R_LIBS=%s ./%s %s %s %s %s %s %s %s %s >> %s 2>&1" %
+        compose_msg("R_LIBS=%s ./%s %s %s %s %s %s %s %s %s %s >> %s 2>&1" %
                     (r_libs, script, db_cvsanaly, db_mlstats, db_bicho, 
-                     today, ddir, db_gerrit, db_irc, msg_body, msg_body))
+                     today, ddir, db_gerrit, db_irc, msg_body, bicho_backend, msg_body))
         os.chdir(path)
-        os.system("R_LIBS=%s ./%s %s %s %s %s %s %s %s %s >> %s 2>&1" %
+        os.system("R_LIBS=%s ./%s %s %s %s %s %s %s %s %s %s >> %s 2>&1" %
                   (r_libs, script, db_cvsanaly, db_mlstats, db_bicho, 
-                   today, ddir, db_gerrit, db_irc, msg_body, msg_body))
+                   today, ddir, db_gerrit, db_irc, msg_body, bicho_backend, msg_body))
 
         compose_msg("[OK] R scripts executed")
     else:

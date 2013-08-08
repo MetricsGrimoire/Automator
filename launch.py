@@ -38,7 +38,7 @@ import distutils.dir_util
 from optparse import OptionGroup, OptionParser
 from ConfigParser import SafeConfigParser
 
-
+import MySQLdb
 
 # conf variables from file(see read_main_conf)
 options = {}
@@ -50,6 +50,7 @@ scm_dir = ''#os.getcwd() + '/../scm/'
 conf_dir = ''#os.getcwd() + '/../conf/'
 json_dir = ''
 production_dir = ''
+
 tools = {
     'scm' :'/usr/local/bin/cvsanaly2',
     'its': '/usr/local/bin/bicho',
@@ -148,6 +149,34 @@ def check_tools():
             print (tools[tool]+" not found or not executable.")
             tools_ok = False
     if not tools_ok: print ("Missing tools. Some reports could not be created.")
+    
+def launch_checkdbs():
+    dbs = []
+    db_user = options['generic']['db_user']
+    db_password = options['generic']['db_password']
+
+    if options['generic'].has_key('db_cvsanaly'):
+        dbs.append(options['generic']['db_cvsanaly'])
+    if options['generic'].has_key('db_bicho'):
+        dbs.append(options['generic']['db_bicho'])
+    # mlstats creates the db if options['generic'].has_key('db_mlstats'): 
+    if options['generic'].has_key('db_gerrit'):
+        dbs.append(options['generic']['db_gerrit'])
+    if options['generic'].has_key('db_irc'):
+        dbs.append(options['generic']['db_irc'])
+    
+    for dbname in dbs:
+        try:
+             db = MySQLdb.connect(user = db_user, passwd = db_password,  db = dbname)
+             db.close()
+        except:
+            print ("Can't connect to " + dbname)
+            db = MySQLdb.connect(user = db_user, passwd = db_password)
+            cursor = db.cursor()
+            query = "CREATE DATABASE " + dbname + " CHARACTER SET utf8 COLLATE utf8_unicode_ci"
+            cursor.execute(query)
+            db.close()
+            print (dbname+" created")
 
 def launch_cvsanaly():
     # using the conf executes cvsanaly for the repos inside scm dir
@@ -545,23 +574,23 @@ def launch_rsync():
         fd.close()
     else:
         compose_msg("[SKIPPED] rsync scripts not executed, no conf available")
-    
-def launch_section(section):
-    print ("Launch only section " + section)
-    fn_section = {
-        'cvsanaly':launch_cvsanaly,
-        'bicho':launch_bicho,
-        'gerrit':launch_gerrit,
-        'mlstats':launch_mlstats,
-        'irc': launch_irc,
-        'identities': launch_identity_scripts,
-        'r':launch_rscripts,
-        'git-production':launch_commit_jsones,
-        'db-dump':launch_database_dump,
-        'rsync':launch_rsync
-    }
-    fn_section[section]()
-    return
+
+
+tasks_section = {
+    'check-dbs':launch_checkdbs,
+    'cvsanaly':launch_cvsanaly,
+    'bicho':launch_bicho,
+    'gerrit':launch_gerrit,
+    'mlstats':launch_mlstats,
+    'irc': launch_irc,
+    'identities': launch_identity_scripts,
+    'r':launch_rscripts,
+    'git-production':launch_commit_jsones,
+    'db-dump':launch_database_dump,
+    'rsync':launch_rsync
+}
+tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc',
+               'identities','r','git-production','db-dump','rsync']
 
 if __name__ == '__main__':
     opt = get_options()   
@@ -575,19 +604,10 @@ if __name__ == '__main__':
     check_tools()
 
     if opt.section is not None:
-        launch_section(opt.section)
+        tasks_section[opt.section]()
     else:
-        launch_cvsanaly()
-        launch_bicho()
-        launch_gerrit()
-        launch_mlstats()
-        launch_irc()
-        launch_identity_scripts()
-        launch_rscripts()
-
-        launch_commit_jsones()
-        launch_database_dump()
-        launch_rsync()
+        for section in tasks_order:
+            tasks_section[section]()
     
     compose_msg("Process finished correctly ...")
 

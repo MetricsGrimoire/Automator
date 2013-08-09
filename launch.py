@@ -438,6 +438,14 @@ def launch_identity_scripts():
                         % (idir, db_user, db_its, db_scm, msg_body))
             os.system("%s/its2identities.py -u %s --db-database-its=%s --db-database-ids=%s >> %s 2>&1"
                       % (idir, db_user, db_its, db_scm, msg_body))
+        
+        # Gerrit use the same schema than its: both use bicho tool              
+        if options['generic'].has_key('db_gerrit'):
+            db_its = options['generic']['db_gerrit']
+            compose_msg("%s/its2identities.py -u %s --db-database-its=%s --db-database-ids=%s >> %s 2>&1"
+                        % (idir, db_user, db_its, db_scm, msg_body))
+            os.system("%s/its2identities.py -u %s --db-database-its=%s --db-database-ids=%s >> %s 2>&1"
+                      % (idir, db_user, db_its, db_scm, msg_body))
 
         if options['generic'].has_key('db_mlstats'):
             db_mls = options['generic']['db_mlstats']

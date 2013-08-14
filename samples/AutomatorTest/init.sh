@@ -40,8 +40,10 @@ cp -a VizGrimoireJS/* ../production/
 rm -rf ../production/browser/data/json/*
 cp VizGrimoireJS/browser/data/json/viz_cfg.json ../production/browser/data/json/
 cp VizGrimoireJS/browser/data/json/project-info.json ../production/browser/data/json/
-mkdir -p ../production/browser/data/db/
 cd ..
+
+# DBs dumping
+mkdir -p production/browser/data/db/
 
 # Publish dashboard
 cd production

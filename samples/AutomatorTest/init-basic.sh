@@ -34,7 +34,7 @@ ln -s ../../../../json VizGrimoireJS/browser/data/json
 cd ..
 
 # DBs
-mkdir -p ../production/browser/data/db/
+mkdir -p production/browser/data/db/
 cd ..
 
 # Global dir with automator

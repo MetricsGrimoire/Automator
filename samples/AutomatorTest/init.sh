@@ -39,6 +39,9 @@ git clone https://github.com/VizGrimoire/VizGrimoireJS.git
 cp VizGrimoireJS/data/* ../json/
 ln -s ../../../../json VizGrimoireJS/browser/data/json
 cp -a VizGrimoireJS/* ../production/
+# Copy test suite (in the future test production)
+cp ../test VizGrimoireJS
+cp ../test/Makefile VizGrimoireJS/
 cd ..
 
 # DBs dumping

@@ -33,8 +33,8 @@ git clone https://github.com/VizGrimoire/VizGrimoireJS.git
 cp VizGrimoireJS/data/* ../json/
 ln -s ../../../../json VizGrimoireJS/browser/data/json
 # Copy test suite
-cp ../test VizGrimoireJS
-cp ../test/Makefile VizGrimoireJS/
+cp -a ../test VizGrimoireJS
+cp -a ../test/Makefile VizGrimoireJS/
 
 cd ..
 

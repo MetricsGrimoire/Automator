@@ -22,10 +22,15 @@ cd ../..
 
 # Download tools
 cd tools
+# VizR
 git clone https://github.com/VizGrimoire/VizGrimoireR.git
 mkdir r-lib
 cd VizGrimoireR
 R CMD INSTALL -l ../r-lib vizgrimoire
+cd ..
+# VizJS
+git clone https://github.com/VizGrimoire/VizGrimoireJS.git
+ln -s ../../../../json VizGrimoireJS/browser/data/json
 cd ..
 
 # DBs
@@ -34,4 +39,4 @@ cd ..
 
 # Global dir with automator
 cd ..
-echo ./launch.py -d `pwd`/AutomatorTest 
+echo ./launch.py -d `pwd`/samples/AutomatorTest 

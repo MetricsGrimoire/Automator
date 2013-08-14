@@ -36,10 +36,9 @@ R CMD INSTALL -l ../r-lib vizgrimoire
 cd ..
 # VizJS
 git clone https://github.com/VizGrimoire/VizGrimoireJS.git
+cp VizGrimoireJS/data/* ../json/
+ln -s ../../../../json VizGrimoireJS/browser/data/json
 cp -a VizGrimoireJS/* ../production/
-rm -rf ../production/browser/data/json/*
-cp VizGrimoireJS/browser/data/json/viz_cfg.json ../production/browser/data/json/
-cp VizGrimoireJS/browser/data/json/project-info.json ../production/browser/data/json/
 cd ..
 
 # DBs dumping

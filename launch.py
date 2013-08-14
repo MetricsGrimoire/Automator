@@ -461,6 +461,12 @@ def launch_identity_scripts():
             os.system("%s/irc2identities.py -u %s --db-database-irc=%s --db-database-ids=%s >> %s 2>&1"
                       % (idir, db_user, db_irc, db_scm, msg_body))
 
+        if options['identities'].has_key('countries'):
+            compose_msg("%s/countries_analysis.py -t true -u %s --database %s >> %s 2>&1"
+                        % (idir, db_user, db_scm, msg_body))
+            os.system("%s/countries_analysis.py -t true -u %s --database %s >> %s 2>&1"
+                        % (idir, db_user, db_scm, msg_body))
+
         compose_msg("[OK] Identity scripts executed")
     else:
         compose_msg("[SKIPPED] Unify identity scripts not executed, no conf available")

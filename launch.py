@@ -306,9 +306,16 @@ def launch_gerrit():
             launched = True
             cont = cont + 1
 
-            compose_msg(tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s --gerrit-project=%s %s >> %s 2>&1"
+            if options['gerrit'].has_key('user'):
+                user = options['gerrit']['user']
+                compose_msg(tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s --backend-user %s -u %s --gerrit-project=%s %s >> %s 2>&1"
+                            % (db_user, db_pass, database, str(delay), backend, user, trackers[0], project, flags, msg_body))
+                os.system(tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s --backend-user %s -u %s --gerrit-project=%s %s >> %s 2>&1"
+                            % (db_user, db_pass, database, str(delay), backend, user, trackers[0], project, flags, msg_body))
+            else:
+                compose_msg(tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s --gerrit-project=%s %s >> %s 2>&1"
                             % (db_user, db_pass, database, str(delay), backend, trackers[0], project, flags, msg_body))
-            os.system(tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s --gerrit-project=%s %s >> %s 2>&1"
+                os.system(tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s --gerrit-project=%s %s >> %s 2>&1"
                             % (db_user, db_pass, database, str(delay), backend, trackers[0], project, flags, msg_body))
 
         if launched:

@@ -284,15 +284,16 @@ def launch_gerrit():
         debug = options['gerrit']['debug']
         #log_table = options['bicho']['log_table']
 
+        # acs - gerrit is incremental
         #Given that gerrit backend for Bicho is not still incremental, database will be truncated
-        compose_msg("/usr/bin/mysqladmin -u %s drop %s -f " 
-                    % (db_user, database))
-        os.system("/usr/bin/mysqladmin -u %s drop %s -f "
-                    % (db_user, database))
-        compose_msg("/usr/bin/mysqladmin -u %s create %s "
-                    % (db_user, database))
-        os.system("/usr/bin/mysqladmin -u %s create %s "
-                    % (db_user, database))
+        # compose_msg("/usr/bin/mysqladmin -u %s drop %s -f " 
+        #             % (db_user, database))
+        # os.system("/usr/bin/mysqladmin -u %s drop %s -f "
+        #             % (db_user, database))
+        # compose_msg("/usr/bin/mysqladmin -u %s create %s "
+        #             % (db_user, database))
+        # os.system("/usr/bin/mysqladmin -u %s create %s "
+        #             % (db_user, database))
 
         #some flags
         flags = ""

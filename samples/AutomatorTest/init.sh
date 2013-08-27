@@ -37,7 +37,10 @@ cd ..
 # VizJS
 git clone https://github.com/VizGrimoire/VizGrimoireJS.git
 cp VizGrimoireJS/data/* ../json/
+mkdir VizGrimoireJS/browser/data/
 ln -s ../../../../json VizGrimoireJS/browser/data/json
+mkdir VizGrimoireJS/dashboard/data/
+ln -s ../../../../json VizGrimoireJS/dashboard/data/json
 cp -a VizGrimoireJS/* ../production/
 # Copy test suite (in the future test production)
 cp -a ../test VizGrimoireJS

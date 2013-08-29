@@ -28,6 +28,7 @@ if section exists it executes the tool, if not it doesn't.
     db_cvsanaly = cvsanaly_db
     db_mlstats = mlstats_db
     db_gerrit = gerrit_db
+    db_irc = gerrit_irc
     
     [bicho]
     # This file contains the information needed to execute Bicho
@@ -38,7 +39,7 @@ if section exists it executes the tool, if not it doesn't.
     trackers = https://bugs.launchpad.net/devstack
     
     [gerrit]
-    # Information about gerrit
+    # This file contains the information needed to execute Bicho for gerrit
     backend = gerrit
     debug = True
     delay = 1
@@ -53,12 +54,13 @@ if section exists it executes the tool, if not it doesn't.
     # This file contains the information needed to execute mlstats
     mailing_lists = http://lists.openstack.org/pipermail/community/
     
+    [irc]
+    
     [r]
     # This file contains information about the R script. The launcher
     # basically chdir into the dir and execute the rscript with the
     # parameters
 
-    rscripts_path = /home/owl/automator/automatic_retrieval/devstack/tools/VizGrimoireR/vizGrimoireJS/
     rscript = run_scripts-devstack.sh
     r_libs = ../r-lib:$R_LIBS
     
@@ -89,7 +91,3 @@ It is capable of executing the following tools (remember they are optional):
 + MLStats
 + IRC Analysis
 + VizGrimoireR scripts
-
-
-
-

@@ -131,8 +131,9 @@ def update_scm():
     compose_msg("SCM is being updated")
     repos = os.listdir(scm_dir)
     for r in repos:
-        if not os.path.isdir(r): continue
-        os.chdir(os.path.join(scm_dir,r))
+        repo_dir = os.path.join(scm_dir,r)
+        if not os.path.isdir(repo_dir): continue
+        os.chdir(repo_dir)
         os.system("git pull >> %s 2>&1" %(msg_body))
         compose_msg(r + " pull ended")
     compose_msg("[OK] SCM updated")

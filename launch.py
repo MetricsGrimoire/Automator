@@ -601,6 +601,24 @@ def launch_database_dump():
 
         fd.close()
 
+def launch_json_dump():
+    # copy and compression of json files to be rsync with customers
+    if options.has_key('json-dump'):
+
+        origin = options['json-dump']['origin_json_dump']
+        origin = origin + '*json'
+        dest = options['json-dump']['destination_json_dump']
+
+        fd = open(msg_body, 'a')
+
+        pr = subprocess.Popen([tools['compress'], 'a', dest, origin],
+                 stdout = fd,
+                 stderr = fd,
+                 shell = False)
+        (out, error) = pr.communicate()
+
+
+
 def launch_rsync():
     # copy JSON files and commit + push them
     if options.has_key('rsync'):
@@ -635,10 +653,11 @@ tasks_section = {
     'r':launch_rscripts,
     'git-production':launch_commit_jsones,
     'db-dump':launch_database_dump,
+    'json-dump':launch_json_dump,
     'rsync':launch_rsync
 }
 tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc',
-               'identities','r','git-production','db-dump','rsync']
+               'identities','r','git-production','db-dump','json-dump','rsync']
 
 if __name__ == '__main__':
     opt = get_options()   

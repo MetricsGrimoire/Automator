@@ -394,6 +394,7 @@ def launch_rscripts():
         # path = options['r']['rscripts_path']
         path = r_dir
         r_libs = options['r']['r_libs']
+        bicho_backend = None
         if options['generic'].has_key('db_cvsanaly'):
             db_cvsanaly = options['generic']['db_cvsanaly']
         else:  db_cvsanaly = "none"
@@ -402,6 +403,8 @@ def launch_rscripts():
         else:  db_mlstats = "none"
         if options['generic'].has_key('db_bicho'):
             db_bicho = options['generic']['db_bicho']
+        if options.has_key('bicho'):
+            bicho_backend = options['bicho']['backend']
         else:  db_bicho = "none"
         if options['generic'].has_key('db_gerrit'):
             db_gerrit = options['generic']['db_gerrit']
@@ -409,7 +412,6 @@ def launch_rscripts():
         if options['generic'].has_key('db_irc'):
             db_irc = options['generic']['db_irc']
         else:  db_irc = "none"
-        bicho_backend = options['bicho']['backend']
         today = time.strftime('%Y-%m-%d')
         ddir = json_dir
         compose_msg("R_LIBS=%s ./%s %s %s %s %s %s %s %s %s %s >> %s 2>&1" %

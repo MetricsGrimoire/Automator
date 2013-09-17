@@ -126,14 +126,31 @@ def read_main_conf():
 
     return options
 
+# git specific: search all repos in a directory recursively
+def get_scm_repos(dir = scm_dir):
+    all_repos = []
+    
+    if (dir == ''):  dir = scm_dir
+    if not os.path.isdir(dir): return all_repos
+
+    repos = os.listdir(dir)
+
+    for r in repos:
+        repo_dir = os.path.join(dir,r,".git")
+        if not os.path.isdir(repo_dir):
+            sub_repos = get_scm_repos(os.path.join(dir,r))
+            for sub_repo in sub_repos:
+                all_repos.append(sub_repo)
+        else:
+            all_repos.append(os.path.join(dir,r))
+    return all_repos     
+
 def update_scm():
     # basically git pull of the dirs inside scm dir
     compose_msg("SCM is being updated")
-    repos = os.listdir(scm_dir)
+    repos = get_scm_repos()
     for r in repos:
-        repo_dir = os.path.join(scm_dir,r)
-        if not os.path.isdir(repo_dir): continue
-        os.chdir(repo_dir)
+        os.chdir(r)
         os.system("git pull >> %s 2>&1" %(msg_body))
         compose_msg(r + " pull ended")
     compose_msg("[OK] SCM updated")
@@ -192,11 +209,10 @@ def launch_cvsanaly():
         db_user = options['generic']['db_user']
 
         # we launch cvsanaly against the repos
-        repos = os.listdir(scm_dir)
+        repos = get_scm_repos()
         for r in repos:
-            if not os.path.isdir(os.path.join(scm_dir,r)): continue 
             launched = True
-            os.chdir(scm_dir + r)
+            os.chdir(r)
             compose_msg(tools['scm'] + " -u %s -d %s --extensions=%s >> %s 2>&1"
                         %(db_user, db_name, extensions, msg_body))
             os.system(tools['scm'] + " -u %s -d %s --extensions=%s >> %s 2>&1"

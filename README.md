@@ -71,7 +71,12 @@ if section exists it executes the tool, if not it doesn't.
     [git-production]
     # Details about the git destination of the JSON
     destination_json = /home/owl/automator/automatic_retrieval/devstack/production/browser/data/json/
-    
+   
+    [json-dump]
+    # This option will compress all of the json files into one file
+    origin_json_dump = production/browser/data/json/
+    destination_json_dump = production/browser/data/db/
+ 
     [db-dump]
     #Data about final dir to dump databases
     destination_db_dump = /home/owl/automator/automatic_retrieval/devstack/production/browser/data/db/

@@ -406,37 +406,15 @@ def launch_rscripts():
 
         compose_msg("R scripts being launched")
 
+        conf_file = project_dir + '/conf/main.conf'
+
         script = options['r']['rscript']
         # path = options['r']['rscripts_path']
         path = r_dir
-        r_libs = options['r']['r_libs']
-        bicho_backend = None
-        if options['generic'].has_key('db_cvsanaly'):
-            db_cvsanaly = options['generic']['db_cvsanaly']
-        else:  db_cvsanaly = "none"
-        if options['generic'].has_key('db_mlstats'):
-            db_mlstats = options['generic']['db_mlstats']
-        else:  db_mlstats = "none"
-        if options['generic'].has_key('db_bicho'):
-            db_bicho = options['generic']['db_bicho']
-        if options.has_key('bicho'):
-            bicho_backend = options['bicho']['backend']
-        else:  db_bicho = "none"
-        if options['generic'].has_key('db_gerrit'):
-            db_gerrit = options['generic']['db_gerrit']
-        else:  db_gerrit = "none"
-        if options['generic'].has_key('db_irc'):
-            db_irc = options['generic']['db_irc']
-        else:  db_irc = "none"
-        today = time.strftime('%Y-%m-%d')
-        ddir = json_dir
-        compose_msg("R_LIBS=%s ./%s %s %s %s %s %s %s %s %s %s >> %s 2>&1" %
-                    (r_libs, script, db_cvsanaly, db_mlstats, db_bicho, 
-                     today, ddir, db_gerrit, db_irc, msg_body, bicho_backend, msg_body))
+        
         os.chdir(path)
-        os.system("R_LIBS=%s ./%s %s %s %s %s %s %s %s %s %s >> %s 2>&1" %
-                  (r_libs, script, db_cvsanaly, db_mlstats, db_bicho, 
-                   today, ddir, db_gerrit, db_irc, msg_body, bicho_backend, msg_body))
+        compose_msg("./%s script -f %s >> %s 2>&1" % (script, conf_file, msg_body))
+        os.system("./%s script -f %s >> %s 2>&1" % (script, conf_file, msg_body)) 
 
         compose_msg("[OK] R scripts executed")
     else:

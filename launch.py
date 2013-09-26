@@ -207,16 +207,17 @@ def launch_cvsanaly():
         extensions = options['cvsanaly']['extensions']
         db_name = options['generic']['db_cvsanaly']
         db_user = options['generic']['db_user']
+        db_pass = options['generic']['db_password']
 
         # we launch cvsanaly against the repos
         repos = get_scm_repos()
         for r in repos:
             launched = True
             os.chdir(r)
-            compose_msg(tools['scm'] + " -u %s -d %s --extensions=%s >> %s 2>&1"
-                        %(db_user, db_name, extensions, msg_body))
-            os.system(tools['scm'] + " -u %s -d %s --extensions=%s >> %s 2>&1"
-                      %(db_user, db_name, extensions, msg_body))
+            compose_msg(tools['scm'] + " -u %s -p %s -d %s --extensions=%s >> %s 2>&1"
+                        %(db_user, db_pass, db_name, extensions, msg_body))
+            os.system(tools['scm'] + " -u %s -p %s -d %s --extensions=%s >> %s 2>&1"
+                      %(db_user, db_pass, db_name, extensions, msg_body))
         
         if launched:
             compose_msg("[OK] cvsanaly executed")
@@ -359,10 +360,10 @@ def launch_mlstats():
         mlists = options['mlstats']['mailing_lists']
         for m in mlists.split(","):
             launched = True
-            compose_msg(tools['mls'] + " --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"\" \"%s\" >> %s 2>&1"
-                        %(db_user, db_pass, db_name, db_admin_user, m, msg_body))
-            os.system(tools['mls'] + " --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"\" \"%s\" >> %s 2>&1"
-                      %(db_user, db_pass, db_name, db_admin_user, m, msg_body))
+            compose_msg(tools['mls'] + " --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"%s\" \"%s\" >> %s 2>&1"
+                        %(db_user, db_pass, db_name, db_admin_user, db_pass, m, msg_body))
+            os.system(tools['mls'] + " --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"%s\" \"%s\" >> %s 2>&1"
+                      %(db_user, db_pass, db_name, db_admin_user, db_pass, m, msg_body))
         if launched:
             compose_msg("[OK] mlstats executed")
         else:

@@ -208,6 +208,7 @@ def launch_cvsanaly():
         db_name = options['generic']['db_cvsanaly']
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
+        if (db_pass == ""): db_pass = "''"
 
         # we launch cvsanaly against the repos
         repos = get_scm_repos()

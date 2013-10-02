@@ -430,6 +430,7 @@ def launch_identity_scripts():
         idir = identities_dir
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
+        if (db_pass == ""): db_pass="''"
 
         if options['generic'].has_key('db_cvsanaly'):
             # TODO: -i no is needed in first execution
@@ -470,9 +471,9 @@ def launch_identity_scripts():
                       % (idir, db_user, db_pass, db_irc, db_scm, msg_body))
 
         if options['identities'].has_key('countries'):
-            compose_msg("%s/countries_analysis.py -t true -u %s -p %s --database %s >> %s 2>&1"
+            compose_msg("%s/load_ids_mapping.py -t true -u %s -p %s --database %s >> %s 2>&1"
                         % (idir, db_user, db_pass, db_scm, msg_body))
-            os.system("%s/countries_analysis.py -t true -u %s -p %s --database %s >> %s 2>&1"
+            os.system("%s/load_ids_mapping.py -t true -u %s -p %s --database %s >> %s 2>&1"
                         % (idir, db_user, db_pass, db_scm, msg_body))
 
         compose_msg("[OK] Identity scripts executed")

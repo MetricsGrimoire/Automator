@@ -410,7 +410,8 @@ def launch_rscripts():
 
         conf_file = project_dir + '/conf/main.conf'
 
-        script = options['r']['rscript']
+        # script = options['r']['rscript']
+        script = "run-analysis.py"
         # path = options['r']['rscripts_path']
         path = r_dir
         

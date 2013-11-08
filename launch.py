@@ -485,7 +485,12 @@ def launch_identity_scripts():
                         % (idir, db_user, db_pass, db_irc, db_scm, msg_body))
             os.system("%s/irc2identities.py -u %s -p %s --db-database-irc=%s --db-database-ids=%s >> %s 2>&1"
                       % (idir, db_user, db_pass, db_irc, db_scm, msg_body))
-
+        if options['generic'].has_key('db_mediawiki'):
+            db_mediawiki = options['generic']['db_mediawiki']
+            compose_msg("%s/mediawiki2identities.py -u %s -p %s --db-database-mediawiki=%s --db-database-ids=%s >> %s 2>&1"
+                        % (idir, db_user, db_pass, db_mediawiki, db_scm, msg_body))
+            os.system("%s/mediawiki2identities.py -u %s -p %s --db-database-mediawiki=%s --db-database-ids=%s >> %s 2>&1"
+                      % (idir, db_user, db_pass, db_mediawiki, db_scm, msg_body))
         if options['identities'].has_key('countries'):
             compose_msg("%s/load_ids_mapping.py -m countries -t true -u %s -p %s --database %s >> %s 2>&1"
                         % (idir, db_user, db_pass, db_scm, msg_body))

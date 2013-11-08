@@ -57,6 +57,7 @@ tools = {
     'scr': '/usr/local/bin/bicho',
     'mls': '/usr/local/bin/mlstats',
     'irc': '/usr/local/bin/irc_analysis.py',
+    'mediawiki': '/usr/local/bin/mediawiki_analysis.py',
     'r': '/usr/bin/R',
     'git': '/usr/bin/git',
     'mysqldump': '/usr/bin/mysqldump',
@@ -182,7 +183,8 @@ def launch_checkdbs():
         dbs.append(options['generic']['db_gerrit'])
     if options['generic'].has_key('db_irc'):
         dbs.append(options['generic']['db_irc'])
-    
+    if options['generic'].has_key('db_mediawiki'):
+        dbs.append(options['generic']['db_mediawiki'])
     for dbname in dbs:
         try:
              db = MySQLdb.connect(user = db_user, passwd = db_password,  db = dbname)
@@ -301,20 +303,7 @@ def launch_gerrit():
         trackers = options['gerrit']['trackers']
         projects = options['gerrit']['projects']
         debug = options['gerrit']['debug']
-        #log_table = options['bicho']['log_table']
 
-        # acs - gerrit is incremental
-        #Given that gerrit backend for Bicho is not still incremental, database will be truncated
-        # compose_msg("/usr/bin/mysqladmin -u %s drop %s -f " 
-        #             % (db_user, database))
-        # os.system("/usr/bin/mysqladmin -u %s drop %s -f "
-        #             % (db_user, database))
-        # compose_msg("/usr/bin/mysqladmin -u %s create %s "
-        #             % (db_user, database))
-        # os.system("/usr/bin/mysqladmin -u %s create %s "
-        #             % (db_user, database))
-
-        #some flags
         flags = ""
         if debug:
             flags = flags + " -g"
@@ -354,7 +343,7 @@ def launch_mlstats():
 
         compose_msg("mlstats is being executed")
         launched = False
-        db_admin_user = options['generic']['db_user']        
+        db_admin_user = options['generic']['db_user']
         db_user = db_admin_user
         db_pass = options['generic']['db_password']
         db_name = options['generic']['db_mlstats']
@@ -399,6 +388,32 @@ def launch_irc():
     else:
         compose_msg("[SKIPPED] irc_analysis was not executed, no conf available")
 
+def launch_mediawiki():
+    if options.has_key('mediawiki'):
+        if not check_tool(tools['mediawiki']):
+            return
+
+        compose_msg("mediawiki_analysis is being executed")
+        launched = False
+        db_admin_user = options['generic']['db_user']
+        db_user = db_admin_user
+        db_pass = options['generic']['db_password']
+        db_name = options['generic']['db_mediawiki']
+        sites = options['mediawiki']['sites']
+
+        for site in sites.split(","):
+            launched = True
+            # ./mediawiki_analysis.py --database acs_mediawiki_rdo_2478 --db-user root --url http://openstack.redhat.com
+            print(tools['mediawiki'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --url=\"%s\" >> %s 2>&1"
+                      %(db_user, db_pass, db_name,  sites, msg_body))
+            os.system(tools['mediawiki'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --url=\"%s\" >> %s 2>&1"
+                      %(db_user, db_pass, db_name,  sites, msg_body))
+        if launched:
+            compose_msg("[OK] mediawiki_analysis executed")
+        else:
+            compose_msg("[SKIPPED] mediawiki_analysis not executed")
+    else:
+        compose_msg("[SKIPPED] mediawiki_analysis was not executed, no conf available")
 
 def launch_rscripts():
     # reads data about r scripts for a conf file and execute it
@@ -650,6 +665,7 @@ tasks_section = {
     'gerrit':launch_gerrit,
     'mlstats':launch_mlstats,
     'irc': launch_irc,
+    'mediawiki': launch_mediawiki,
     'identities': launch_identity_scripts,
     'r':launch_rscripts,
     'git-production':launch_commit_jsones,
@@ -657,7 +673,7 @@ tasks_section = {
     'json-dump':launch_json_dump,
     'rsync':launch_rsync
 }
-tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc',
+tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki',
                'identities','r','git-production','db-dump','json-dump','rsync']
 
 if __name__ == '__main__':

@@ -459,38 +459,38 @@ def launch_identity_scripts():
 
         if options['generic'].has_key('db_bicho'):
             db_its = options['generic']['db_bicho']
-            compose_msg("%s/its2identities.py -u %s -p %s --db-database-its=%s --db-database-ids=%s >> %s 2>&1"
-                        % (idir, db_user, db_pass, db_its, db_scm, msg_body))
-            os.system("%s/its2identities.py -u %s -p %s --db-database-its=%s --db-database-ids=%s >> %s 2>&1"
-                      % (idir, db_user, db_pass, db_its, db_scm, msg_body))
+            compose_msg("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
+                        % (idir, db_user, db_pass, db_its, db_scm, 'its', msg_body))
+            os.system("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
+                      % (idir, db_user, db_pass, db_its, db_scm, 'its', msg_body))
         
         # Gerrit use the same schema than its: both use bicho tool              
         if options['generic'].has_key('db_gerrit'):
             db_its = options['generic']['db_gerrit']
-            compose_msg("%s/its2identities.py -u %s -p %s --db-database-its=%s --db-database-ids=%s >> %s 2>&1"
-                        % (idir, db_user, db_pass, db_its, db_scm, msg_body))
-            os.system("%s/its2identities.py -u %s -p %s --db-database-its=%s --db-database-ids=%s >> %s 2>&1"
-                      % (idir, db_user, db_pass, db_its, db_scm, msg_body))
+            compose_msg("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
+                        % (idir, db_user, db_pass, db_its, db_scm, 'scr', msg_body))
+            os.system("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
+                      % (idir, db_user, db_pass, db_its, db_scm, 'scr', msg_body))
 
         if options['generic'].has_key('db_mlstats'):
             db_mls = options['generic']['db_mlstats']
-            compose_msg("%s/mls2identities.py -u %s -p %s --db-database-mls=%s --db-database-ids=%s >> %s 2>&1"
-                        % (idir, db_user, db_pass, db_mls, db_scm, msg_body))
-            os.system("%s/mls2identities.py -u %s -p %s --db-database-mls=%s --db-database-ids=%s >> %s 2>&1"
-                      % (idir, db_user, db_pass, db_mls, db_scm, msg_body))
+            compose_msg("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
+                        % (idir, db_user, db_pass, db_mls, db_scm, 'mls', msg_body))
+            os.system("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
+                      % (idir, db_user, db_pass, db_mls, db_scm, 'mls', msg_body))
 
         if options['generic'].has_key('db_irc'):
             db_irc = options['generic']['db_irc']
-            compose_msg("%s/irc2identities.py -u %s -p %s --db-database-irc=%s --db-database-ids=%s >> %s 2>&1"
-                        % (idir, db_user, db_pass, db_irc, db_scm, msg_body))
-            os.system("%s/irc2identities.py -u %s -p %s --db-database-irc=%s --db-database-ids=%s >> %s 2>&1"
-                      % (idir, db_user, db_pass, db_irc, db_scm, msg_body))
+            compose_msg("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
+                        % (idir, db_user, db_pass, db_irc, db_scm, 'irc', msg_body))
+            os.system("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
+                      % (idir, db_user, db_pass, db_irc, db_scm, 'irc', msg_body))
         if options['generic'].has_key('db_mediawiki'):
             db_mediawiki = options['generic']['db_mediawiki']
-            compose_msg("%s/mediawiki2identities.py -u %s -p %s --db-database-mediawiki=%s --db-database-ids=%s >> %s 2>&1"
-                        % (idir, db_user, db_pass, db_mediawiki, db_scm, msg_body))
-            os.system("%s/mediawiki2identities.py -u %s -p %s --db-database-mediawiki=%s --db-database-ids=%s >> %s 2>&1"
-                      % (idir, db_user, db_pass, db_mediawiki, db_scm, msg_body))
+            compose_msg("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
+                        % (idir, db_user, db_pass, db_mediawiki, db_scm, 'mediawiki', msg_body))
+            os.system("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
+                      % (idir, db_user, db_pass, db_mediawiki, db_scm, 'mediawiki', msg_body))
         if options['identities'].has_key('countries'):
             compose_msg("%s/load_ids_mapping.py -m countries -t true -u %s -p %s --database %s >> %s 2>&1"
                         % (idir, db_user, db_pass, db_scm, msg_body))

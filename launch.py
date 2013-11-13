@@ -372,15 +372,18 @@ def launch_irc():
         db_user = db_admin_user
         db_pass = options['generic']['db_password']
         db_name = options['generic']['db_irc']
+        format = 'plain'
+        if options['irc'].has_key('format'):
+            format = options['irc']['format']
         channels = os.listdir(irc_dir)
         os.chdir(irc_dir)
         for channel in channels:
             if not os.path.isdir(os.path.join(irc_dir,channel)): continue
             launched = True
-            compose_msg(tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --dir=\"%s\" --channel=\"%s\">> %s 2>&1"
-                        % (db_user, db_pass, db_name, channel, channel, msg_body))
-            os.system(tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --dir=\"%s\" --channel=\"%s\">> %s 2>&1"
-                        %(db_user, db_pass, db_name, channel, channel, msg_body))
+            compose_msg(tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --dir=\"%s\" --channel=\"%s\" --format %s>> %s 2>&1"
+                        % (db_user, db_pass, db_name, channel, channel, format, msg_body))
+            os.system(tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --dir=\"%s\" --channel=\"%s\" --format %s>> %s 2>&1"
+                        %(db_user, db_pass, db_name, channel, channel, format, msg_body))
         if launched:
             compose_msg("[OK] irc_analysis executed")
         else:

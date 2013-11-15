@@ -22,6 +22,8 @@ cd ../..
 
 # Download tools
 cd tools
+# VizUtils
+git clone https://github.com/VizGrimoire/VizGrimoireUtils.git
 # VizR
 git clone https://github.com/VizGrimoire/VizGrimoireR.git
 mkdir r-lib

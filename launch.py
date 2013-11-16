@@ -591,6 +591,8 @@ def launch_database_dump():
             dbs.append([options['generic']['db_gerrit'],'reviews']);
         if options['generic'].has_key('db_irc'):
             dbs.append([options['generic']['db_irc'],'irc']);
+        if options['generic'].has_key('db_mediawiki'):
+            dbs.append([options['generic']['db_mediawiki'],'mediawiki']);
 
         fd = open(msg_body, 'a')
         destination = os.path.join(project_dir,options['db-dump']['destination_db_dump'])

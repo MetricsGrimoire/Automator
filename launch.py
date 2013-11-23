@@ -252,7 +252,7 @@ def launch_bicho():
         trackers = options['bicho']['trackers']
         debug = options['bicho']['debug']
         log_table = options['bicho']['log_table']
-        
+
         # we compose some flags
         flags = ""
         if debug:
@@ -304,17 +304,22 @@ def launch_gerrit():
         trackers = options['gerrit']['trackers']
         projects = options['gerrit']['projects']
         debug = options['gerrit']['debug']
+        log_table = options['gerrit']['log_table']
 
         flags = ""
         if debug:
             flags = flags + " -g"
     
+        # we'll only create the log table in the last execution
         cont = 0
-        last = len(projects)
+        last = len(projects.split(","))
 
         for project in projects.split(","):
             launched = True
             cont = cont + 1
+
+            if cont == last and log_table:
+                flags = flags + " -l"
 
             if options['gerrit'].has_key('user'):
                 user = options['gerrit']['user']

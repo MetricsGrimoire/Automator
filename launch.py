@@ -67,11 +67,10 @@ tools = {
     'rsync': '/usr/bin/rsync'
 }
 
-def get_options():     
+def get_options():
     parser = OptionParser(usage='Usage: %prog [options]',
                           description='Update data, process it and obtain JSON files',
                           version='0.1')
-    
     parser.add_option('-d','--dir', dest='project_dir',
                      help='Path with the configuration of the project', default=None)
     parser.add_option('-s','--section', dest='section',
@@ -675,7 +674,8 @@ def launch_rsync():
 def write_json(data, filename):
     # TODO: if file exists create a backup
     jsonfile = open(os.path.join(json_dir, filename), 'w')
-    jsonfile.write(json.dumps(data, indent=4, separators=(',', ': ')))
+    # jsonfile.write(json.dumps(data, indent=4, separators=(',', ': ')))
+    jsonfile.write(json.dumps(data, indent=4, sort_keys=True))
     jsonfile.close()
 
 def launch_vizjs_config():
@@ -713,9 +713,39 @@ def launch_vizjs_project_info():
         "mls_url":"",
         "mls_name":"",
         "mls_type":"",
+        "scr_url":"",
+        "scr_name":"",
+        "scr_type":"",
+        "irc_url":"",
+        "irc_name":"",
+        "irc_type":"",
+        "mediawiki_url":"",
+        "mediawiki_name":"",
+        "mediawiki_type":"",
         "producer":"Automator",
         "blog_url":""
     }
+    # ITS URL
+    its_url = options['bicho']['trackers'][0]
+    aux = its_url.split("//",1)
+    its_url = aux[0]+"//"+aux[1].split("/")[0]
+    project_info['its_url'] = its_url
+    # SCM URL: not possible until automator download gits
+    scm_url = ""
+    # MLS URL
+    aux = options['mlstats']['mailing_lists']
+    mls_url = aux.split(",")[0]
+    aux = mls_url.split("//",1)
+    mls_url = aux[0]+"//"+aux[1].split("/")[0]
+    project_info['mls_url'] = mls_url
+    # SCR URL
+    scr_url = "http://"+options['gerrit']['trackers'][0]
+    project_info['scr_url'] = scr_url
+    # Mediawiki URL
+    mediawiki_url = options['mediawiki']['sites']
+    project_info['mediawiki_url'] = mediawiki_url
+    import pprint
+    pprint.pprint(project_info)
     write_json(project_info, 'project_info_automator.json')
 
 def launch_vizjs():

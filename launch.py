@@ -34,6 +34,7 @@ import subprocess
 import sys
 import time
 import distutils.dir_util
+import json
 
 from optparse import OptionGroup, OptionParser
 from ConfigParser import SafeConfigParser
@@ -94,7 +95,7 @@ def initialize_globals(pdir):
     global production_dir
     global identities_dir
     global r_dir
-    
+
     project_dir = pdir
     msg_body = project_dir + '/log/launch.log'
     scm_dir = project_dir + '/scm/'
@@ -131,7 +132,7 @@ def read_main_conf():
 # git specific: search all repos in a directory recursively
 def get_scm_repos(dir = scm_dir):
     all_repos = []
-    
+
     if (dir == ''):  dir = scm_dir
     if not os.path.isdir(dir): return all_repos
 
@@ -169,7 +170,7 @@ def check_tools():
             print (tools[tool]+" not found or not executable.")
             tools_ok = False
     if not tools_ok: print ("Missing tools. Some reports could not be created.")
-    
+
 def launch_checkdbs():
     dbs = []
     db_user = options['generic']['db_user']
@@ -222,7 +223,7 @@ def launch_cvsanaly():
                         %(db_user, db_pass, db_name, extensions, msg_body))
             os.system(tools['scm'] + " -u %s -p %s -d %s --extensions=%s >> %s 2>&1"
                       %(db_user, db_pass, db_name, extensions, msg_body))
-        
+
         if launched:
             compose_msg("[OK] cvsanaly executed")
         else:
@@ -309,7 +310,7 @@ def launch_gerrit():
         flags = ""
         if debug:
             flags = flags + " -g"
-    
+
         # we'll only create the log table in the last execution
         cont = 0
         last = len(projects.split(","))
@@ -438,7 +439,7 @@ def launch_rscripts():
         script = "run-analysis.py"
         # path = options['r']['rscripts_path']
         path = r_dir
-        
+
         os.chdir(path)
         compose_msg("./%s script -f %s >> %s 2>&1" % (script, conf_file, msg_body))
         os.system("./%s script -f %s >> %s 2>&1" % (script, conf_file, msg_body)) 
@@ -472,7 +473,7 @@ def launch_identity_scripts():
                         % (idir, db_user, db_pass, db_its, db_scm, 'its', msg_body))
             os.system("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
                       % (idir, db_user, db_pass, db_its, db_scm, 'its', msg_body))
-        
+
         # Gerrit use the same schema than its: both use bicho tool              
         if options['generic'].has_key('db_gerrit'):
             db_its = options['generic']['db_gerrit']
@@ -516,7 +517,7 @@ def compose_msg(text):
     time_tag = '[' + time.strftime('%H:%M:%S') + ']'
     fd.write(time_tag + ' ' + text)
     fd.write('\n')
-    fd.close()    
+    fd.close()
 
 def reset_log():
     # remove log file
@@ -541,28 +542,28 @@ def launch_commit_jsones():
 
         fd = open(msg_body, 'a')
 
-        pr = subprocess.Popen(['/usr/bin/git', 'pull'],                  
+        pr = subprocess.Popen(['/usr/bin/git', 'pull'],
                               cwd=os.path.dirname(destination),
                               stdout=fd, 
                               stderr=fd, 
                               shell=False)
         (out, error) = pr.communicate()
 
-        pr = subprocess.Popen(['/usr/bin/git', 'add', './*'],                  
-                              cwd=os.path.dirname(destination),
-                              stdout=fd, 
-                              stderr=fd, 
-                              shell=False)
-        (out, error) = pr.communicate()
-                
-        pr = subprocess.Popen(['/usr/bin/git', 'commit', '-m', 'JSON updated by the Owl Bot'],                  
+        pr = subprocess.Popen(['/usr/bin/git', 'add', './*'],
                               cwd=os.path.dirname(destination),
                               stdout=fd, 
                               stderr=fd, 
                               shell=False)
         (out, error) = pr.communicate()
 
-        pr = subprocess.Popen(['/usr/bin/git', 'push', 'origin', 'master'],                  
+        pr = subprocess.Popen(['/usr/bin/git', 'commit', '-m', 'JSON updated by the Owl Bot'],
+                              cwd=os.path.dirname(destination),
+                              stdout=fd, 
+                              stderr=fd, 
+                              shell=False)
+        (out, error) = pr.communicate()
+
+        pr = subprocess.Popen(['/usr/bin/git', 'push', 'origin', 'master'],
                               cwd=os.path.dirname(destination),
                               stdout=fd, 
                               stderr=fd, 
@@ -579,13 +580,13 @@ def launch_database_dump():
             return
 
         compose_msg("Dumping databases")
-        
+
         dbs = []
 
         # databases
         # this may fail if any of the four is not found
         db_user = options['generic']['db_user']
-        
+
         if options['generic'].has_key('db_bicho'):
             dbs.append([options['generic']['db_bicho'], 'tickets']);
         if options['generic'].has_key('db_cvsanaly'):
@@ -649,8 +650,6 @@ def launch_json_dump():
                  shell = False)
         (out, error) = pr.communicate()
 
-
-
 def launch_rsync():
     # copy JSON files and commit + push them
     if options.has_key('rsync'):
@@ -673,6 +672,55 @@ def launch_rsync():
     else:
         compose_msg("[SKIPPED] rsync scripts not executed, no conf available")
 
+def write_json(data, filename):
+    # TODO: if file exists create a backup
+    jsonfile = open(os.path.join(json_dir, filename), 'w')
+    jsonfile.write(json.dumps(data, indent=4, separators=(',', ': ')))
+    jsonfile.close()
+
+def launch_vizjs_config():
+    config = {}
+    active_ds = []
+    # All data source with database configured are active
+    dbs_to_ds = {
+           'db_cvsanaly': 'scm',
+           'db_bicho': 'its',
+           'db_gerrit':'gerrit',
+           'db_mlstats':'mlstats',
+           'db_irc':'irc',
+           'db_mediawiki':'mediaki'
+    }
+    for db in dbs_to_ds:
+        if options['generic'].has_key(db):
+            active_ds.append(dbs_to_ds[db])
+
+    config['data-sources'] = active_ds
+
+    write_json(config, 'config.json')
+
+# create the project-info.json file
+def launch_vizjs_project_info():
+    project_info = {
+        "date":"",
+        "project_name" : options['generic']['project'],
+        "project_url" :"",
+        "scm_url":"",
+        "scm_name":"",
+        "scm_type":"git",
+        "its_url":"",
+        "its_name":"Tickets",
+        "its_type":"",
+        "mls_url":"",
+        "mls_name":"",
+        "mls_type":"",
+        "producer":"Automator",
+        "blog_url":""
+    }
+    write_json(project_info, 'project_info_automator.json')
+
+def launch_vizjs():
+    launch_vizjs_config()
+    launch_vizjs_project_info()
 
 tasks_section = {
     'check-dbs':launch_checkdbs,
@@ -687,10 +735,11 @@ tasks_section = {
     'git-production':launch_commit_jsones,
     'db-dump':launch_database_dump,
     'json-dump':launch_json_dump,
-    'rsync':launch_rsync
+    'rsync':launch_rsync,
+    'vizjs':launch_vizjs
 }
 tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki',
-               'identities','r','git-production','db-dump','json-dump','rsync']
+               'identities','r','vizjs','git-production','db-dump','json-dump','rsync']
 
 if __name__ == '__main__':
     opt = get_options()   
@@ -698,9 +747,9 @@ if __name__ == '__main__':
 
     reset_log()
     compose_msg("Starting ..") 
-    
+
     read_main_conf()
-    
+
     check_tools()
 
     if opt.section is not None:
@@ -708,7 +757,7 @@ if __name__ == '__main__':
     else:
         for section in tasks_order:
             tasks_section[section]()
-    
+
     compose_msg("Process finished correctly ...")
 
     # done, we sent the result

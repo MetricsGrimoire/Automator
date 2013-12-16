@@ -688,18 +688,28 @@ def launch_vizjs_config():
            'db_gerrit':'gerrit',
            'db_mlstats':'mlstats',
            'db_irc':'irc',
-           'db_mediawiki':'mediaki'
+           'db_mediawiki':'mediawiki'
     }
     for db in dbs_to_ds:
         if options['generic'].has_key(db):
             active_ds.append(dbs_to_ds[db])
+    if options['generic'].has_key('markers'):
+        config['markers'] = options['generic']['markers'];
+
+    if not ('end_date' in options['r']):
+        options['r']['end_date'] = time.strftime('%Y-%m-%d')
 
     config['data-sources'] = active_ds
+    config['reports'] = options['r']['reports'].split(",")
+    config['period'] = options['r']['period']
+    config['start_date'] = options['r']['start_date']
+    config['end_date'] = options['r']['end_date']
+    config['project_info'] = get_project_info()
 
     write_json(config, 'config.json')
 
 # create the project-info.json file
-def launch_vizjs_project_info():
+def get_project_info():
     project_info = {
         "date":"",
         "project_name" : options['generic']['project'],
@@ -744,13 +754,8 @@ def launch_vizjs_project_info():
     # Mediawiki URL
     mediawiki_url = options['mediawiki']['sites']
     project_info['mediawiki_url'] = mediawiki_url
-    import pprint
-    pprint.pprint(project_info)
-    write_json(project_info, 'project_info_automator.json')
 
-def launch_vizjs():
-    launch_vizjs_config()
-    launch_vizjs_project_info()
+    return project_info
 
 tasks_section = {
     'check-dbs':launch_checkdbs,
@@ -766,7 +771,7 @@ tasks_section = {
     'db-dump':launch_database_dump,
     'json-dump':launch_json_dump,
     'rsync':launch_rsync,
-    'vizjs':launch_vizjs
+    'vizjs':launch_vizjs_config
 }
 tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki',
                'identities','r','vizjs','git-production','db-dump','json-dump','rsync']

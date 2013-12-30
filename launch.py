@@ -748,6 +748,7 @@ def get_project_info():
     aux = mls_url.split("//",1)
     mls_url = aux[0]+"//"+aux[1].split("/")[0]
     project_info['mls_url'] = mls_url
+    project_info['mls_name'] = "Mailing lists"
     # SCR URL
     scr_url = "http://"+options['gerrit']['trackers'][0]
     project_info['scr_url'] = scr_url

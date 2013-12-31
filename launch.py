@@ -671,9 +671,10 @@ def launch_rsync():
     else:
         compose_msg("[SKIPPED] rsync scripts not executed, no conf available")
 
-def write_json(data, filename):
+def write_json_config(data, filename):
+    # The file should be created in project_dir
     # TODO: if file exists create a backup
-    jsonfile = open(os.path.join(json_dir, filename), 'w')
+    jsonfile = open(os.path.join(production_dir, filename), 'w')
     # jsonfile.write(json.dumps(data, indent=4, separators=(',', ': ')))
     jsonfile.write(json.dumps(data, indent=4, sort_keys=True))
     jsonfile.close()
@@ -706,7 +707,7 @@ def launch_vizjs_config():
     config['end_date'] = options['r']['end_date']
     config['project_info'] = get_project_info()
 
-    write_json(config, 'config.json')
+    write_json_config(config, 'config.json')
 
 # create the project-info.json file
 def get_project_info():

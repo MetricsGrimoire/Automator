@@ -75,6 +75,11 @@ def get_options():
                      help='Path with the configuration of the project', default=None)
     parser.add_option('-s','--section', dest='section',
                      help='Section to be executed', default=None)
+    parser.add_option('-t','--subtask', dest='subtask',
+                     help='Sub section to be executed (only for r)', default=None)
+    parser.add_option('-g', '--debug', action='store_true', dest='debug',
+                        help='Enable debug mode', default=False)
+
 
     (ops, args) = parser.parse_args()
 
@@ -218,10 +223,10 @@ def launch_cvsanaly():
         for r in repos:
             launched = True
             os.chdir(r)
-            compose_msg(tools['scm'] + " -u %s -p %s -d %s --extensions=%s >> %s 2>&1"
-                        %(db_user, db_pass, db_name, extensions, msg_body))
-            os.system(tools['scm'] + " -u %s -p %s -d %s --extensions=%s >> %s 2>&1"
-                      %(db_user, db_pass, db_name, extensions, msg_body))
+            cmd = tools['scm'] + " -u %s -p %s -d %s --extensions=%s >> %s 2>&1" \
+                        %(db_user, db_pass, db_name, extensions, msg_body)
+            compose_msg(cmd)
+            os.system(cmd)
 
         if launched:
             compose_msg("[OK] cvsanaly executed")
@@ -269,16 +274,13 @@ def launch_bicho():
             if cont == last and log_table:
                 flags = flags + " -l"
 
+            user_opt = ''
             if backend_user and backend_password:
-                compose_msg(tools['its'] + " --db-user-out=%s --db-password-out=%s --backend-user=%s --backend-password=%s --db-database-out=%s -d %s -b %s -u %s %s >> %s 2>&1"
-                            % (db_user, db_pass, backend_user, backend_password, database, str(delay), backend, t, flags, msg_body))
-                os.system(tools['its'] + " --db-user-out=%s --db-password-out=%s --backend-user=%s --backend-password=%s --db-database-out=%s -d %s -b %s -u %s %s >> %s 2>&1"
-                            % (db_user, db_pass, backend_user, backend_password, database, str(delay), backend, t, flags, msg_body))
-            else:
-                compose_msg(tools['its'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s %s >> %s 2>&1"
-                            % (db_user, db_pass, database, str(delay), backend, t, flags, msg_body))
-                os.system(tools['its'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s %s >> %s 2>&1"
-                          % (db_user, db_pass, database, str(delay), backend, t, flags, msg_body))
+                user_opt = '--backend-user=%s --backend-password=%s' % (backend_user, backend_password)
+            cmd = tools['its'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s %s -u %s %s >> %s 2>&1" \
+                        % (db_user, db_pass, database, str(delay), backend, user_opt, t, flags, msg_body)
+            compose_msg(cmd)
+            os.system(cmd)
         if launched:
             compose_msg("[OK] bicho executed")
         else:
@@ -321,17 +323,14 @@ def launch_gerrit():
             if cont == last and log_table:
                 flags = flags + " -l"
 
+            g_user = ''
             if options['gerrit'].has_key('user'):
-                user = options['gerrit']['user']
-                compose_msg(tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s --backend-user %s -u %s --gerrit-project=%s %s >> %s 2>&1"
-                            % (db_user, db_pass, database, str(delay), backend, user, trackers[0], project, flags, msg_body))
-                os.system(tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s --backend-user %s -u %s --gerrit-project=%s %s >> %s 2>&1"
-                            % (db_user, db_pass, database, str(delay), backend, user, trackers[0], project, flags, msg_body))
-            else:
-                compose_msg(tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s --gerrit-project=%s %s >> %s 2>&1"
-                            % (db_user, db_pass, database, str(delay), backend, trackers[0], project, flags, msg_body))
-                os.system(tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s --gerrit-project=%s %s >> %s 2>&1"
-                            % (db_user, db_pass, database, str(delay), backend, trackers[0], project, flags, msg_body))
+                g_user = '--backend-user ' + options['gerrit']['user']
+            cmd = tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s %s -u %s --gerrit-project=%s %s >> %s 2>&1" \
+                            % (db_user, db_pass, database, str(delay), backend, g_user, trackers[0], project, flags, msg_body)
+            compose_msg(cmd)
+            os.system(cmd)
+
 
         if launched:
             compose_msg("[OK] bicho (gerrit) executed")
@@ -356,10 +355,10 @@ def launch_mlstats():
         mlists = options['mlstats']['mailing_lists']
         for m in mlists.split(","):
             launched = True
-            compose_msg(tools['mls'] + " --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"%s\" \"%s\" >> %s 2>&1"
-                        %(db_user, db_pass, db_name, db_admin_user, db_pass, m, msg_body))
-            os.system(tools['mls'] + " --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"%s\" \"%s\" >> %s 2>&1"
-                      %(db_user, db_pass, db_name, db_admin_user, db_pass, m, msg_body))
+            cmd = tools['mls'] + " --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"%s\" \"%s\" >> %s 2>&1" \
+                        %(db_user, db_pass, db_name, db_admin_user, db_pass, m, msg_body)
+            compose_msg(cmd)
+            os.system(cmd)
         if launched:
             compose_msg("[OK] mlstats executed")
         else:
@@ -386,10 +385,10 @@ def launch_irc():
         for channel in channels:
             if not os.path.isdir(os.path.join(irc_dir,channel)): continue
             launched = True
-            compose_msg(tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --dir=\"%s\" --channel=\"%s\" --format %s>> %s 2>&1"
-                        % (db_user, db_pass, db_name, channel, channel, format, msg_body))
-            os.system(tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --dir=\"%s\" --channel=\"%s\" --format %s>> %s 2>&1"
-                        %(db_user, db_pass, db_name, channel, channel, format, msg_body))
+            cmd = tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --dir=\"%s\" --channel=\"%s\" --format %s>> %s 2>&1" \
+                        % (db_user, db_pass, db_name, channel, channel, format, msg_body)
+            compose_msg(cmd)
+            os.system(cmd)
         if launched:
             compose_msg("[OK] irc_analysis executed")
         else:
@@ -413,10 +412,10 @@ def launch_mediawiki():
         for site in sites.split(","):
             launched = True
             # ./mediawiki_analysis.py --database acs_mediawiki_rdo_2478 --db-user root --url http://openstack.redhat.com
-            print(tools['mediawiki'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --url=\"%s\" >> %s 2>&1"
-                      %(db_user, db_pass, db_name,  sites, msg_body))
-            os.system(tools['mediawiki'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --url=\"%s\" >> %s 2>&1"
-                      %(db_user, db_pass, db_name,  sites, msg_body))
+            cmd = tools['mediawiki'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --url=\"%s\" >> %s 2>&1" \
+                      %(db_user, db_pass, db_name,  sites, msg_body)
+            compose_msg(cmd)
+            os.system(cmd)
         if launched:
             compose_msg("[OK] mediawiki_analysis executed")
         else:
@@ -439,13 +438,33 @@ def launch_rscripts():
         # path = options['r']['rscripts_path']
         path = r_dir
 
+        params = get_options()
+
+        r_section = ''
+        if params.subtask:
+            r_section = "-s " + params.subtask
+        if params.debug:
+            r_section += " -g "
+
         os.chdir(path)
-        compose_msg("./%s script -f %s >> %s 2>&1" % (script, conf_file, msg_body))
-        os.system("./%s script -f %s >> %s 2>&1" % (script, conf_file, msg_body)) 
+        cmd = "./%s -f %s %s >> %s 2>&1" % (script, conf_file, r_section, msg_body)
+        compose_msg(cmd)
+        os.system(cmd)
 
         compose_msg("[OK] R scripts executed")
     else:
         compose_msg("[SKIPPED] R scripts were not executed, no conf available")
+
+def get_ds_identities_cmd(db, type):
+    idir = identities_dir
+    db_user = options['generic']['db_user']
+    db_pass = options['generic']['db_password']
+    if (db_pass == ""): db_pass="''"
+    db_scm = options['generic']['db_cvsanaly']
+    db_ids = db_scm
+    cmd = "%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1" \
+            % (idir, db_user, db_pass, db, db_ids, type, msg_body)
+    return cmd
 
 def launch_identity_scripts():
     # using the conf executes cvsanaly for the repos inside scm dir
@@ -460,51 +479,48 @@ def launch_identity_scripts():
         if options['generic'].has_key('db_cvsanaly'):
             # TODO: -i no is needed in first execution
             db_scm = options['generic']['db_cvsanaly']
-            compose_msg("%s/unifypeople.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_scm, msg_body))
-            os.system("%s/unifypeople.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_scm, msg_body))
+            cmd = "%s/unifypeople.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_scm, msg_body)
+            compose_msg(cmd)
+            os.system(cmd)
             # Companies are needed in Top because bots are included in a company
-            compose_msg("%s/domains_analysis.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_scm, msg_body))
-            os.system("%s/domains_analysis.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_scm, msg_body))
+            cmd = "%s/domains_analysis.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_scm, msg_body)
+            compose_msg(cmd)
+            os.system(cmd)
 
         if options['generic'].has_key('db_bicho'):
             db_its = options['generic']['db_bicho']
-            compose_msg("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
-                        % (idir, db_user, db_pass, db_its, db_scm, 'its', msg_body))
-            os.system("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
-                      % (idir, db_user, db_pass, db_its, db_scm, 'its', msg_body))
+            cmd = get_ds_identities_cmd(db_its, 'its')
+            compose_msg(cmd)
+            os.system(cmd)
 
         # Gerrit use the same schema than its: both use bicho tool              
         if options['generic'].has_key('db_gerrit'):
-            db_its = options['generic']['db_gerrit']
-            compose_msg("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
-                        % (idir, db_user, db_pass, db_its, db_scm, 'scr', msg_body))
-            os.system("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
-                      % (idir, db_user, db_pass, db_its, db_scm, 'scr', msg_body))
+            db_gerrit = options['generic']['db_gerrit']
+            cmd = get_ds_identities_cmd(db_gerrit, 'scr')
+            compose_msg(cmd)
+            os.system(cmd)
 
         if options['generic'].has_key('db_mlstats'):
             db_mls = options['generic']['db_mlstats']
-            compose_msg("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
-                        % (idir, db_user, db_pass, db_mls, db_scm, 'mls', msg_body))
-            os.system("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
-                      % (idir, db_user, db_pass, db_mls, db_scm, 'mls', msg_body))
+            cmd = get_ds_identities_cmd(db_mls, 'mls')
+            compose_msg(cmd)
+            os.system(cmd)
 
         if options['generic'].has_key('db_irc'):
             db_irc = options['generic']['db_irc']
-            compose_msg("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
-                        % (idir, db_user, db_pass, db_irc, db_scm, 'irc', msg_body))
-            os.system("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
-                      % (idir, db_user, db_pass, db_irc, db_scm, 'irc', msg_body))
+            cmd = get_ds_identities_cmd(db_irc, 'irc')
+            compose_msg(cmd)
+            os.system(cmd)
         if options['generic'].has_key('db_mediawiki'):
             db_mediawiki = options['generic']['db_mediawiki']
-            compose_msg("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
-                        % (idir, db_user, db_pass, db_mediawiki, db_scm, 'mediawiki', msg_body))
-            os.system("%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1"
-                      % (idir, db_user, db_pass, db_mediawiki, db_scm, 'mediawiki', msg_body))
+            cmd = get_ds_identities_cmd(db_mediawiki, 'mediawiki')
+            compose_msg(cmd)
+            os.system(cmd)
         if options['identities'].has_key('countries'):
-            compose_msg("%s/load_ids_mapping.py -m countries -t true -u %s -p %s --database %s >> %s 2>&1"
-                        % (idir, db_user, db_pass, db_scm, msg_body))
-            os.system("%s/load_ids_mapping.py -m countries -t true -u %s -p %s --database %s >> %s 2>&1"
-                        % (idir, db_user, db_pass, db_scm, msg_body))
+            cmd = "%s/load_ids_mapping.py -m countries -t true -u %s -p %s --database %s >> %s 2>&1" \
+                        % (idir, db_user, db_pass, db_scm, msg_body)
+            compose_msg(cmd)
+            os.system(cmd)
 
         compose_msg("[OK] Identity scripts executed")
     else:
@@ -706,6 +722,8 @@ def launch_vizjs_config():
     config['start_date'] = options['r']['start_date']
     config['end_date'] = options['r']['end_date']
     config['project_info'] = get_project_info()
+
+    compose_msg("Writing config file for VizGrimoireJS: " + production_dir + "config.json")
 
     write_json_config(config, 'config.json')
 

@@ -20,6 +20,9 @@ cd wikimedia-fundraising
 tar xfz ../#wikimedia-fundraising.tar.gz
 cd ../..
 
+# JSON files
+mkdir json
+
 # Download tools
 cd tools
 # VizUtils

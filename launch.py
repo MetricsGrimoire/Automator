@@ -61,6 +61,7 @@ tools = {
     'mediawiki': '/usr/local/bin/mediawiki_analysis.py',
     'r': '/usr/bin/R',
     'git': '/usr/bin/git',
+    'svn': '/usr/bin/svn',
     'mysqldump': '/usr/bin/mysqldump',
     'compress': '/usr/bin/7zr',
     'rm': '/bin/rm',
@@ -143,24 +144,31 @@ def get_scm_repos(dir = scm_dir):
     repos = os.listdir(dir)
 
     for r in repos:
-        repo_dir = os.path.join(dir,r,".git")
-        if not os.path.isdir(repo_dir):
+        repo_dir_git = os.path.join(dir,r,".git")
+        repo_dir_svn = os.path.join(dir,r,".svn")
+        if not os.path.isdir(repo_dir_git) and not os.path.isdir(repo_dir_svn):
             sub_repos = get_scm_repos(os.path.join(dir,r))
             for sub_repo in sub_repos:
                 all_repos.append(sub_repo)
         else:
             all_repos.append(os.path.join(dir,r))
-    return all_repos     
+    return all_repos
 
-def update_scm():
-    # basically git pull of the dirs inside scm dir
+def update_scm(dir = scm_dir):
     compose_msg("SCM is being updated")
     repos = get_scm_repos()
+    updated = False
+
     for r in repos:
         os.chdir(r)
-        os.system("git pull >> %s 2>&1" %(msg_body))
-        compose_msg(r + " pull ended")
-    compose_msg("[OK] SCM updated")
+        if os.path.isdir(os.path.join(dir,r,".git")):
+            os.system("git pull >> %s 2>&1" %(msg_body))
+        elif os.path.isdir(os.path.join(dir,r,".svn")):
+            os.system("svn update >> %s 2>&1" %(msg_body))
+        else: compose_msg(r + " not git nor svn.")
+        compose_msg(r + " update ended")
+
+    if updated: compose_msg("[OK] SCM updated")
 
 def check_tool(cmd):
     return os.path.isfile(cmd) and os.access(cmd, os.X_OK)
@@ -518,6 +526,11 @@ def launch_identity_scripts():
             os.system(cmd)
         if options['identities'].has_key('countries'):
             cmd = "%s/load_ids_mapping.py -m countries -t true -u %s -p %s --database %s >> %s 2>&1" \
+                        % (idir, db_user, db_pass, db_scm, msg_body)
+            compose_msg(cmd)
+            os.system(cmd)
+        if options['identities'].has_key('companies'):
+            cmd = "%s/load_ids_mapping.py -m companies -t true -u %s -p %s --database %s >> %s 2>&1" \
                         % (idir, db_user, db_pass, db_scm, msg_body)
             compose_msg(cmd)
             os.system(cmd)

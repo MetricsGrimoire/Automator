@@ -768,25 +768,29 @@ def get_project_info():
         "blog_url":""
     }
     # ITS URL
-    its_url = options['bicho']['trackers'][0]
-    aux = its_url.split("//",1)
-    its_url = aux[0]+"//"+aux[1].split("/")[0]
-    project_info['its_url'] = its_url
+    if options.has_key('bicho'):
+        its_url = options['bicho']['trackers'][0]
+        aux = its_url.split("//",1)
+        its_url = aux[0]+"//"+aux[1].split("/")[0]
+        project_info['its_url'] = its_url
     # SCM URL: not possible until automator download gits
     scm_url = ""
     # MLS URL
-    aux = options['mlstats']['mailing_lists']
-    mls_url = aux.split(",")[0]
-    aux = mls_url.split("//",1)
-    mls_url = aux[0]+"//"+aux[1].split("/")[0]
-    project_info['mls_url'] = mls_url
-    project_info['mls_name'] = "Mailing lists"
+    if options.has_key('mlstats'):
+        aux = options['mlstats']['mailing_lists']
+        mls_url = aux.split(",")[0]
+        aux = mls_url.split("//",1)
+        mls_url = aux[0]+"//"+aux[1].split("/")[0]
+        project_info['mls_url'] = mls_url
+        project_info['mls_name'] = "Mailing lists"
     # SCR URL
-    scr_url = "http://"+options['gerrit']['trackers'][0]
-    project_info['scr_url'] = scr_url
+    if options.has_key('gerrit'):
+        scr_url = "http://"+options['gerrit']['trackers'][0]
+        project_info['scr_url'] = scr_url
     # Mediawiki URL
-    mediawiki_url = options['mediawiki']['sites']
-    project_info['mediawiki_url'] = mediawiki_url
+    if options.has_key('mediawiki'):
+        mediawiki_url = options['mediawiki']['sites']
+        project_info['mediawiki_url'] = mediawiki_url
 
     return project_info
 

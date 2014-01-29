@@ -35,7 +35,7 @@ import sys
 import time
 import distutils.dir_util
 import json
-
+import datetime as dt
 from optparse import OptionGroup, OptionParser
 from ConfigParser import SafeConfigParser
 
@@ -74,6 +74,8 @@ def get_options():
                           version='0.1')
     parser.add_option('-d','--dir', dest='project_dir',
                      help='Path with the configuration of the project', default=None)
+    parser.add_option('-q','--quiet', action='store_true', dest='quiet_mode',
+                      help='Disable messages in standard output', default=False)
     parser.add_option('-s','--section', dest='section',
                      help='Section to be executed', default=None)
     parser.add_option('-t','--subtask', dest='subtask',
@@ -794,6 +796,14 @@ def get_project_info():
 
     return project_info
 
+def print_std(string, new_line=True):
+    # Send string to standard input if quiet mode is disabled
+    if not opt.quiet_mode:
+        if new_line:
+            print(string)
+        else:
+            print(string),
+
 tasks_section = {
     'check-dbs':launch_checkdbs,
     'cvsanaly':launch_cvsanaly,
@@ -828,7 +838,13 @@ if __name__ == '__main__':
         tasks_section[opt.section]()
     else:
         for section in tasks_order:
+            t0 = dt.datetime.now()
+            print_std("Executing %s ...." % (section), new_line=False)
+            sys.stdout.flush()
             tasks_section[section]()
+            t1 = dt.datetime.now()
+            print_std(" %s minutes" % ((t1-t0).seconds/60))
+    print_std("Finished.")
 
     compose_msg("Process finished correctly ...")
 

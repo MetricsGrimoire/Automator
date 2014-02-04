@@ -80,7 +80,8 @@ def get_options():
                      help='Sub section to be executed (only for r)', default=None)
     parser.add_option('-g', '--debug', action='store_true', dest='debug',
                         help='Enable debug mode', default=False)
-
+    parser.add_option('--python', dest='python', action="store_true",
+                      help='Use python script for getting metrics.')
 
     (ops, args) = parser.parse_args()
 
@@ -453,9 +454,12 @@ def launch_rscripts():
             r_section = "-s " + params.subtask
         if params.debug:
             r_section += " -g "
+        python_scripts = ""
+        if params.python:
+            python_scripts = "--python"
 
         os.chdir(path)
-        cmd = "./%s -f %s %s >> %s 2>&1" % (script, conf_file, r_section, msg_body)
+        cmd = "./%s -f %s %s %s >> %s 2>&1" % (script, conf_file, r_section, python_scripts, msg_body)
         compose_msg(cmd)
         os.system(cmd)
 

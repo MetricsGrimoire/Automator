@@ -784,7 +784,8 @@ def get_project_info():
         aux = options['mlstats']['mailing_lists']
         mls_url = aux.split(",")[0]
         aux = mls_url.split("//",1)
-        mls_url = aux[0]+"//"+aux[1].split("/")[0]
+        if (len(aux) > 1):
+            mls_url = aux[0]+"//"+aux[1].split("/")[0]
         project_info['mls_url'] = mls_url
         project_info['mls_name'] = "Mailing lists"
     # SCR URL

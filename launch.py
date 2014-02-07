@@ -267,8 +267,7 @@ def launch_bicho():
             backend_password = options['bicho']['backend_password']
         trackers = options['bicho']['trackers']
         debug = options['bicho']['debug']
-        if options['bicho'].has_key('log_table'):
-            log_table = options['bicho']['log_table']
+        log_table = options['bicho']['log_table']
 
         # we compose some flags
         flags = ""
@@ -318,8 +317,7 @@ def launch_gerrit():
         trackers = options['gerrit']['trackers']
         projects = options['gerrit']['projects']
         debug = options['gerrit']['debug']
-        if options['gerrit'].has_key('log_table'):
-            log_table = options['gerrit']['log_table']
+        log_table = options['gerrit']['log_table']
 
         flags = ""
         if debug:

@@ -566,6 +566,15 @@ def reset_log():
         fd.write('')
         fd.close()
 
+def launch_copy_json():
+    # copy JSON files to other directories
+    # This option helps when having more than one automator, but all of the
+    # json files should be moved to a centralized directory
+    if options.has_key('copy-json'):
+        compose_msg("Copying JSON files to another directory")
+        destination = os.path.join(project_dir,options['copy-json']['destination_json'])
+        distutils.dir_util.copy_tree(json_dir, destination)
+
 def launch_commit_jsones():
     # copy JSON files and commit + push them
     if options.has_key('git-production'):
@@ -823,6 +832,7 @@ tasks_section = {
     'mediawiki': launch_mediawiki,
     'identities': launch_identity_scripts,
     'r':launch_rscripts,
+    'copy-json': launch_copy_json,
     'git-production':launch_commit_jsones,
     'db-dump':launch_database_dump,
     'json-dump':launch_json_dump,
@@ -830,7 +840,7 @@ tasks_section = {
     'vizjs':launch_vizjs_config
 }
 tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki',
-               'identities','r','vizjs','git-production','db-dump','json-dump','rsync']
+               'identities','r','copy-json', 'vizjs','git-production','db-dump','json-dump','rsync']
 
 if __name__ == '__main__':
     opt = get_options()   

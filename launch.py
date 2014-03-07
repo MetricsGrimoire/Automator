@@ -131,7 +131,8 @@ def read_main_conf():
             if o == 'debug':
                 options[s][o] = parser.getboolean(s,o)
             elif o == 'trackers':
-                options[s][o] = parser.get(s,o).split(',') 
+                trackers = parser.get(s,o).split(',')
+                options[s][o] = [t.translate(None, '\n\t ') for t in trackers]
             else:
                 options[s][o] = parser.get(s,o)
 

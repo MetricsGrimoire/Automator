@@ -132,7 +132,7 @@ def read_main_conf():
                 options[s][o] = parser.getboolean(s,o)
             elif o == 'trackers':
                 trackers = parser.get(s,o).split(',')
-                options[s][o] = [t.translate(None, '\n\t ') for t in trackers]
+                options[s][o] = [t.replace('\n', '') for t in trackers]
             else:
                 options[s][o] = parser.get(s,o)
 

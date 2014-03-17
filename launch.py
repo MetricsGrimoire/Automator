@@ -113,6 +113,7 @@ def initialize_globals(pdir):
     production_dir = project_dir + '/production/'
     # identities_dir = project_dir + '/tools/VizGrimoireR/misc/'
     identities_dir = project_dir + '/tools/VizGrimoireUtils/identities/'
+    downloads_dir = project_dir + 'tools/VizGrimoireUtils/downloads/'
     r_dir = project_dir + '/tools/VizGrimoireR/vizGrimoireJS/'
 
 def read_main_conf():
@@ -438,6 +439,25 @@ def launch_mediawiki():
             compose_msg("[SKIPPED] mediawiki_analysis not executed")
     else:
         compose_msg("[SKIPPED] mediawiki_analysis was not executed, no conf available")
+
+def launch_downloads():
+    # check if downloads option exists. If it does, downloads are executed
+    if options.has_key('downloads'):
+        compose_msg("downloads analysis is being executed")
+        url_user = options['downloads']['url_user']
+        url_pass = options['downloads']['url_password']
+        url = options['downloads']['url']
+        db_name = options['generic']['db_downloads']
+        db_user = options['generic']['db_user']
+        db_password = options['generic']['db_password']
+ 
+        # sh script: $1 url user, $2 url pass, $3 url, $4 db user, $5 db pass
+        cmd = "%s/downloads.sh %s %s %s %s %s"
+              % (downloads_dir, url_user, url_pass, url, db_user, db_name)
+        compose_msg(cmd)
+        os.system(cmd)
+        compose_msg("[OK] downloads executed")
+
 
 def launch_rscripts():
     # reads data about r scripts for a conf file and execute it
@@ -831,6 +851,7 @@ tasks_section = {
     'mlstats':launch_mlstats,
     'irc': launch_irc,
     'mediawiki': launch_mediawiki,
+    'downloads': launch_downloads,
     'identities': launch_identity_scripts,
     'r':launch_rscripts,
     'copy-json': launch_copy_json,
@@ -840,7 +861,7 @@ tasks_section = {
     'rsync':launch_rsync,
     'vizjs':launch_vizjs_config
 }
-tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki',
+tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
                'identities','r','copy-json', 'vizjs','git-production','db-dump','json-dump','rsync']
 
 if __name__ == '__main__':

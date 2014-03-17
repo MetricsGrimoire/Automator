@@ -113,7 +113,7 @@ def initialize_globals(pdir):
     production_dir = project_dir + '/production/'
     # identities_dir = project_dir + '/tools/VizGrimoireR/misc/'
     identities_dir = project_dir + '/tools/VizGrimoireUtils/identities/'
-    downloads_dir = project_dir + 'tools/VizGrimoireUtils/downloads/'
+    downloads_dir = project_dir + '/tools/VizGrimoireUtils/downloads/'
     r_dir = project_dir + '/tools/VizGrimoireR/vizGrimoireJS/'
 
 def read_main_conf():

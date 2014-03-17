@@ -99,9 +99,11 @@ def initialize_globals(pdir):
     global scm_dir
     global irc_dir
     global conf_dir
+    global downs_dir
     global json_dir
     global production_dir
     global identities_dir
+    global downloads_dir
     global r_dir
 
     project_dir = pdir
@@ -109,10 +111,12 @@ def initialize_globals(pdir):
     scm_dir = project_dir + '/scm/'
     irc_dir = project_dir + '/irc/'
     conf_dir = project_dir + '/conf/'
+    downs_dir = project_dir + '/downloads/'
     json_dir = project_dir + '/json/'
     production_dir = project_dir + '/production/'
     # identities_dir = project_dir + '/tools/VizGrimoireR/misc/'
     identities_dir = project_dir + '/tools/VizGrimoireUtils/identities/'
+    downloads_dir = project_dir + '/tools/VizGrimoireUtils/downloads/'
     r_dir = project_dir + '/tools/VizGrimoireR/vizGrimoireJS/'
 
 def read_main_conf():
@@ -438,6 +442,25 @@ def launch_mediawiki():
             compose_msg("[SKIPPED] mediawiki_analysis not executed")
     else:
         compose_msg("[SKIPPED] mediawiki_analysis was not executed, no conf available")
+
+def launch_downloads():
+    # check if downloads option exists. If it does, downloads are executed
+    if options.has_key('downloads'):
+        compose_msg("downloads analysis is being executed")
+        url_user = options['downloads']['url_user']
+        url_pass = options['downloads']['url_password']
+        url = options['downloads']['url']
+        db_name = options['generic']['db_downloads']
+        db_user = options['generic']['db_user']
+        db_password = options['generic']['db_password']
+ 
+        # sh script: $1 output dir, $2 url user, $3 url pass, $4 url, $5 db user, $6 db pass
+        cmd = "%s/downloads.sh %s %s %s %s %s %s" \
+              % (downloads_dir, downs_dir, url_user, url_pass, url, db_user, db_name)
+        compose_msg(cmd)
+        os.system(cmd)
+        compose_msg("[OK] downloads executed")
+
 
 def launch_rscripts():
     # reads data about r scripts for a conf file and execute it
@@ -831,6 +854,7 @@ tasks_section = {
     'mlstats':launch_mlstats,
     'irc': launch_irc,
     'mediawiki': launch_mediawiki,
+    'downloads': launch_downloads,
     'identities': launch_identity_scripts,
     'r':launch_rscripts,
     'copy-json': launch_copy_json,
@@ -840,7 +864,7 @@ tasks_section = {
     'rsync':launch_rsync,
     'vizjs':launch_vizjs_config
 }
-tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki',
+tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
                'identities','r','copy-json', 'vizjs','git-production','db-dump','json-dump','rsync']
 
 if __name__ == '__main__':

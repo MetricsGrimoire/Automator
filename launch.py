@@ -373,10 +373,16 @@ def launch_mlstats():
         db_pass = options['generic']['db_password']
         db_name = options['generic']['db_mlstats']
         mlists = options['mlstats']['mailing_lists']
+
+        force = ''
+        if options['mlstats'].has_key('force'):
+            if options['mlstats']['force'] is True:
+                force = '--force'
+
         for m in mlists.split(","):
             launched = True
-            cmd = tools['mls'] + " --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"%s\" \"%s\" >> %s 2>&1" \
-                        %(db_user, db_pass, db_name, db_admin_user, db_pass, m, msg_body)
+            cmd = tools['mls'] + " %s --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"%s\" \"%s\" >> %s 2>&1" \
+                        %(force, db_user, db_pass, db_name, db_admin_user, db_pass, m, msg_body)
             compose_msg(cmd)
             os.system(cmd)
         if launched:

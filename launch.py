@@ -99,9 +99,11 @@ def initialize_globals(pdir):
     global scm_dir
     global irc_dir
     global conf_dir
+    global downs_dir
     global json_dir
     global production_dir
     global identities_dir
+    global downloads_dir
     global r_dir
 
     project_dir = pdir
@@ -109,6 +111,7 @@ def initialize_globals(pdir):
     scm_dir = project_dir + '/scm/'
     irc_dir = project_dir + '/irc/'
     conf_dir = project_dir + '/conf/'
+    downs_dir = project_dir + '/downloads/'
     json_dir = project_dir + '/json/'
     production_dir = project_dir + '/production/'
     # identities_dir = project_dir + '/tools/VizGrimoireR/misc/'
@@ -451,9 +454,9 @@ def launch_downloads():
         db_user = options['generic']['db_user']
         db_password = options['generic']['db_password']
  
-        # sh script: $1 url user, $2 url pass, $3 url, $4 db user, $5 db pass
-        cmd = "%s/downloads.sh %s %s %s %s %s"
-              % (downloads_dir, url_user, url_pass, url, db_user, db_name)
+        # sh script: $1 output dir, $2 url user, $3 url pass, $4 url, $5 db user, $6 db pass
+        cmd = "%s/downloads.sh %s %s %s %s %s %s" \
+              % (downloads_dir, downs_dir, url_user, url_pass, url, db_user, db_name)
         compose_msg(cmd)
         os.system(cmd)
         compose_msg("[OK] downloads executed")

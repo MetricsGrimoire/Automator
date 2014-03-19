@@ -134,9 +134,9 @@ def read_main_conf():
             # first, some special cases
             if o == 'debug':
                 options[s][o] = parser.getboolean(s,o)
-            elif o == 'trackers':
-                trackers = parser.get(s,o).split(',')
-                options[s][o] = [t.replace('\n', '') for t in trackers]
+            elif o == 'trackers' or o == 'projects':
+                data_sources = parser.get(s,o).split(',')
+                options[s][o] = [ds.replace('\n', '') for ds in data_sources]
             else:
                 options[s][o] = parser.get(s,o)
 

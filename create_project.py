@@ -30,6 +30,7 @@ import json
 import logging
 from optparse import OptionParser
 import os.path
+from subprocess import call
 import sys
 import urllib2, urllib
 from ConfigParser import SafeConfigParser
@@ -83,8 +84,56 @@ def create_project_dirs(name, output_dir):
 
     for dir in basic_dirs:
         new_dir = os.path.join(project_dir,dir)
-        if not os.path.exists(new_dir): 
+        if not os.path.exists(new_dir):
             os.makedirs(new_dir)
+
+def safe_git_clone(git_repo, dir_repo):
+    """Clone a git_repo y dir_repo with error control"""
+
+    cmd = ["git", "clone" , git_repo, dir_repo]
+    logging.info(" ".join(cmd))
+    return_code = call(cmd)
+    if return_code == 1:
+        logging.error("Error in " + " ".join(cmd))
+        sys.exit()
+
+def config_r(tools_dir):
+    # Configure R environment
+    cmd = ["R", "CMD", "INSTALL", "-l",
+           os.path.join(tools_dir,"r-lib"),
+           os.path.join(tools_dir,"GrimoireLib","vizgrimoire")]
+    r_lib_dir = os.path.join(tools_dir, "r-lib")
+    if not os.path.exists(r_lib_dir):
+        os.makedirs(r_lib_dir)
+    return_code = call(cmd)
+    if return_code == 1:
+        logging.error("Error in " + " ".join(cmd))
+        sys.exit()
+    # Legacy dir
+    legacy_link = os.path.join(tools_dir,"VizGrimoireR")
+    if not os.path.islink(legacy_link):
+        os.symlink("GrimoireLib", legacy_link)
+
+def download_tools (project_name, output_dir):
+    """
+        Download and configure tools needed to create the dashboard
+        GrimoireLib, VizGrimoireUtils, VizGrimoireJS
+    """
+
+    gits = {
+            "GrimoireLib":  "https://github.com/VizGrimoire/GrimoireLib.git",
+            "VizGrimoireUtils" : "https://github.com/VizGrimoire/VizGrimoireUtils.git",
+            "VizGrimoireJS" :  "https://github.com/VizGrimoire/VizGrimoireJS.git"
+            }
+    tools_dir = os.path.join(output_dir,project_name,"tools")
+    logging.info("Downloading tools to: " + tools_dir)
+
+    for git in gits:
+        dir_repo = os.path.join(tools_dir, git)
+        safe_git_clone(gits[git], dir_repo)
+
+    config_r(tools_dir)
+
 
 def get_config_generic():
     global project_name
@@ -142,7 +191,8 @@ def get_config_cvsanaly():
     return vars
 
 def get_config_mlstats():
-    mailing_lists = "http://lists.wikimedia.org/pipermail/mediawiki-announce,http://lists.wikimedia.org/pipermail/mediawiki-api-announce"
+    mailing_lists  = "http://lists.wikimedia.org/pipermail/mediawiki-announce,"
+    mailing_lists += "http://lists.wikimedia.org/pipermail/mediawiki-api-announce"
     vars = [
             ["mailing_lists", mailing_lists]
             ]
@@ -240,3 +290,4 @@ if __name__ == '__main__':
     logging.info("Creating automator projects under: " + opts.output_dir)
     create_project_dirs(project_name, opts.output_dir)
     create_project_config(project_name, opts.output_dir)
+    download_tools(project_name, opts.output_dir)

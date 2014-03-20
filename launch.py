@@ -334,9 +334,9 @@ def launch_gerrit():
 
         # we'll only create the log table in the last execution
         cont = 0
-        last = len(projects.split(","))
+        last = len(projects)
 
-        for project in projects.split(","):
+        for project in projects:
             launched = True
             cont = cont + 1
 

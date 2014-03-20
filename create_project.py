@@ -89,7 +89,8 @@ def create_project_dirs(name, output_dir):
 def get_config_generic():
     global project_name
     # Keep the order using a list
-    vars = [["config_generator","create_project"],
+    vars = [
+            ["config_generator","create_project"],
             ["mail","YOUR EMAIL"],
             ["project",project_name],
             ["db_user","root"],
@@ -111,89 +112,89 @@ def get_config_bicho():
     trackers += '"https://bugzilla.wikimedia.org/buglist.cgi?product=analytics&component=kraken",'
     trackers += '"https://bugzilla.wikimedia.org/buglist.cgi?product=Parsoid",'
     trackers += '"https://bugzilla.wikimedia.org/buglist.cgi?product=VisualEditor"'
-    vars = {
-            "backend":"bg",
-            "debug":"True",
-            "delay":"1",
-            "log_table":"False",
-            "trackers":trackers
-            }
+    vars = [
+            ["backend","bg"],
+            ["debug","True"],
+            ["delay","1"],
+            ["log_table","False"],
+            ["trackers",trackers]
+        ]
     return vars
 
 def get_config_gerrit():
     projects = '"mediawiki/extensions/Cite","mediawiki/extensions/ArticleFeedback"'
-    vars = {
-        "backend":"gerrit",
-        "# user":"gerrit user name account",
-        "user":"acs",
-        "debug":"True",
-        "delay":"1",
-        "trackers":"gerrit.wikimedia.org",
-        "log_table":"True",
-        "projects":projects,
-    }
+    vars = [
+        ["backend","gerrit"],
+        ["# user","gerrit user name account"],
+        ["user","acs"],
+        ["debug","True"],
+        ["delay","1"],
+        ["trackers","gerrit.wikimedia.org"],
+        ["log_table","True"],
+        ["projects",projects],
+    ]
     return vars
 
 def get_config_cvsanaly():
-    vars = {
-            "extensions":"CommitsLOC,FileTypes"
-            }
+    vars = [
+            ["extensions","CommitsLOC,FileTypes"]
+            ]
     return vars
 
 def get_config_mlstats():
     mailing_lists = "http://lists.wikimedia.org/pipermail/mediawiki-announce,http://lists.wikimedia.org/pipermail/mediawiki-api-announce"
-    vars = {
-            "mailing_lists": mailing_lists
-            }
+    vars = [
+            ["mailing_lists", mailing_lists]
+            ]
     return vars
 
 def get_config_irc():
-    vars = {
-            "format":"plain"
-            }
+    vars = [
+            ["format","plain"]
+            ]
     return vars
 
 def get_config_mediawiki():
     sites = "http://openstack.redhat.com"
-    vars = {
-            "sites": sites
-    }
+    vars = [
+            ["sites", sites]
+    ]
     return vars
 
 def get_config_r():
-    vars = {
-            "rscript":"run-analysis.py",
-            "start_date":"2010-01-01",
-            "end_data":"2014-03-20",
-            "reports":"repositories,companies,countries,people,domains",
-            "period":"months"
-    }
+    vars = [
+            ["rscript","run-analysis.py"],
+            ["start_date","2010-01-01"],
+            ["end_data","2014-03-20"],
+            ["reports","repositories,companies,countries,people,domains"],
+            ["period","months"]
+    ]
     return vars
 
 def get_config_identities():
-    vars = {
-            "countries":"debug",
-            "companies":"debug",
-    }
+    vars = [
+            ["countries","debug"],
+            ["companies","debug"],
+    ]
     return vars
 
 def get_config_git_production():
-    vars = {
-            "destination_json":"production/browser/data/json/"
-    }
+    vars = [
+            ["destination_json","production/browser/data/json/"]
+    ]
     return vars
 
 def get_config_db_dump():
-    vars = {
-            "destination_db_dump":"production/browser/data/db/"
-    }
+    vars = [
+            ["destination_db_dump","production/browser/data/db/"]
+    ]
 
     return vars
 
 def get_config_rsync():
-    vars = {
-            "destination":"yourmaildomain@activity.AutomatorTest.org:/var/www/dash/"
-    }
+    vars = [
+            ["destination","yourmaildomain@activity.AutomatorTest.org:/var/www/dash/"]
+    ]
     return vars
 
 def check_config_file(config_file):
@@ -208,20 +209,25 @@ def create_project_config(name, output_dir):
 
     fd = open(config_file, 'w')
 
-    sections = ["generic","bicho","gerrit","cvsanaly","mlstats","irc","mediawiki","r",
-                "identities","git-production","db-dump","rsync"]
+    sections = [
+                ["generic",get_config_generic],
+                ["bicho",get_config_bicho],
+                ["gerrit",get_config_gerrit],
+                ["cvsanaly",get_config_cvsanaly],
+                ["mlstats",get_config_mlstats],
+                ["irc",get_config_irc],
+                ["mediawiki",get_config_mediawiki],
+                ["r",get_config_r],
+                ["identities",get_config_identities],
+                ["git-production",get_config_git_production],
+                ["db-dump",get_config_db_dump],
+                ["rsync",get_config_rsync]
+                ]
     for section in sections:
-        parser.add_section(section)
-
-        fn_section_name = ("get_config_"+section).replace("-","_")
-        fn_section = getattr(sys.modules[__name__], fn_section_name)
-        config_vars = fn_section()
-        if isinstance(config_vars, list):
-            for var in config_vars:
-                parser.set(section, var[0], var[1])
-        else:
-            for var in config_vars:
-                parser.set(section, var, config_vars[var])
+        parser.add_section(section[0])
+        config_vars = section[1]()
+        for var in config_vars:
+            parser.set(section[0], var[0], var[1])
 
     parser.write(fd)
 

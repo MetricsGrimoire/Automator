@@ -29,6 +29,7 @@ if section exists it executes the tool, if not it doesn't.
     db_mlstats = mlstats_db
     db_gerrit = gerrit_db
     db_irc = gerrit_irc
+    db_downloads = downloads_db
     
     [bicho]
     # This file contains the information needed to execute Bicho
@@ -53,7 +54,13 @@ if section exists it executes the tool, if not it doesn't.
     [mlstats]
     # This file contains the information needed to execute mlstats
     mailing_lists = http://lists.openstack.org/pipermail/community/
-    
+   
+    [downloads]
+    # This section contains information about a downloads web directory
+    url_user = user
+    url_password = pass
+    url = http://testing.url/logs/
+ 
     [irc]
     
     [r]

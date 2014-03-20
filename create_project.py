@@ -62,12 +62,19 @@ def read_options():
 
 def get_project_repos(proj_file):
     """Read projects information from a file and return it parsed."""
+    projects = {}
     parser = SafeConfigParser()
     fd = open(proj_file, 'r')
     parser.readfp(fd)
     fd.close()
 
-    projects = parser.sections()
+    projects_list = parser.sections()
+    for project in projects_list:
+        projects[project] = {}
+        opts = parser.options(project)
+        for opt in opts:
+            data_sources = parser.get(project,opt).split(',')
+            projects[project][opt] = [ds.replace('\n', '') for ds in data_sources]
     return projects
 
 def create_project_dirs(name, output_dir):
@@ -87,10 +94,16 @@ def create_project_dirs(name, output_dir):
         if not os.path.exists(new_dir):
             os.makedirs(new_dir)
 
-def safe_git_clone(git_repo, dir_repo):
+def safe_git_clone(git_repo, dir_repo = ""):
     """Clone a git_repo y dir_repo with error control"""
 
-    cmd = ["git", "clone" , git_repo, dir_repo]
+    # Remove delimiters. Added by call command later.
+    git_repo = git_repo.replace("\"","").replace("'","")
+
+    if (dir_repo != ""):
+        cmd = ["git", "clone" , git_repo, dir_repo]
+    else:
+        cmd = ["git", "clone" , git_repo]
     logging.info(" ".join(cmd))
     return_code = call(cmd)
     if return_code == 1:
@@ -114,6 +127,15 @@ def config_r(tools_dir):
     if not os.path.islink(legacy_link):
         os.symlink("GrimoireLib", legacy_link)
 
+def config_viz(tools_dir):
+    data_dir = os.path.join(tools_dir,"VizGrimoireJS",
+                             "browser","data")
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+    json_link = os.path.join(data_dir,"json")
+    if not os.path.islink(json_link):
+        os.symlink("../../../../json", json_link)
+
 def download_tools (project_name, output_dir):
     """
         Download and configure tools needed to create the dashboard
@@ -133,6 +155,30 @@ def download_tools (project_name, output_dir):
         safe_git_clone(gits[git], dir_repo)
 
     config_r(tools_dir)
+    config_viz(tools_dir)
+
+def download_gits (git_repos, dir_project):
+    """Download the gits for a project"""
+    repos_dir = os.path.join(dir_project,"scm")
+    path_orig = os.getcwd()
+    os.chdir(repos_dir)
+    for repo in git_repos:
+        logging.info(repo)
+        safe_git_clone(repo)
+    os.chdir(path_orig)
+
+def download_irc (archive_urls, dir_project):
+    pass
+    #wget http://bots.wmflabs.org/~wm-bot/logs/%23wikimedia-analytics/%23wikimedia-analytics.tar.gz
+    #wget http://bots.wmflabs.org/~wm-bot/logs/%23wikimedia-fundraising/%23wikimedia-fundraising.tar.gz
+    #mkdir wikimedia-analytics
+    #mkdir wikimedia-fundraising
+    #cd wikimedia-analytics/
+    #tar xfz ../#wikimedia-analytics.tar.gz
+    #cd ..
+    #cd wikimedia-fundraising
+    #tar xfz ../#wikimedia-fundraising.tar.gz
+    #cd ../..
 
 
 def get_config_generic():
@@ -145,13 +191,13 @@ def get_config_generic():
             ["db_user","root"],
             ["db_password",""],
             ["bicho_backend","bugzilla"],
-            ["db_bicho","acs_bicho_automatortest_2388"],
-            ["db_cvsanaly","acs_cvsanaly_automatortest_2388"],
-            ["db_identities","acs_cvsanaly_automatortest_2388"],
-            ["db_mlstats","acs_mlstats_automatortest_2388"],
-            ["db_gerrit","acs_gerrit_automatortest_2388"],
-            ["db_irc","acs_irc_automatortest_2388_2"],
-            ["db_mediawiki","acs_mediawiki_rdo_2478"]
+            ["db_bicho","acs_bicho_automatortest_cp"],
+            ["db_cvsanaly","acs_cvsanaly_automatortest_cp"],
+            ["db_identities","acs_cvsanaly_automatortest_cp"],
+            ["db_mlstats","acs_mlstats_automatortest_cp"],
+            ["db_gerrit","acs_gerrit_automatortest_cp"],
+            ["db_irc","acs_irc_automatortest_cp"],
+            ["db_mediawiki","acs_mediawiki_automator_test_cp"]
         ]
     return vars
 
@@ -159,8 +205,8 @@ def get_config_bicho():
     trackers  = 'https://bugzilla.wikimedia.org/buglist.cgi?product=Huggle,'
     trackers += 'https://bugzilla.wikimedia.org/buglist.cgi?product=Analytics,'
     trackers += '"https://bugzilla.wikimedia.org/buglist.cgi?product=analytics&component=kraken",'
-    trackers += '"https://bugzilla.wikimedia.org/buglist.cgi?product=Parsoid",'
-    trackers += '"https://bugzilla.wikimedia.org/buglist.cgi?product=VisualEditor"'
+    # trackers += '"https://bugzilla.wikimedia.org/buglist.cgi?product=Parsoid",'
+    # trackers += '"https://bugzilla.wikimedia.org/buglist.cgi?product=VisualEditor"'
     vars = [
             ["backend","bg"],
             ["debug","True"],
@@ -286,8 +332,11 @@ if __name__ == '__main__':
 
     opts = read_options()
     projects = get_project_repos(opts.project_file)
-    project_name = "Test"
-    logging.info("Creating automator projects under: " + opts.output_dir)
-    create_project_dirs(project_name, opts.output_dir)
-    create_project_config(project_name, opts.output_dir)
-    download_tools(project_name, opts.output_dir)
+    for project in projects:
+        project_name = project
+        logging.info("Creating automator projects under: " + opts.output_dir)
+        create_project_dirs(project_name, opts.output_dir)
+        project_dir = os.path.join(opts.output_dir, project_name)
+        download_gits(projects[project]['source'], project_dir)
+        create_project_config(project_name, opts.output_dir)
+        download_tools(project_name, opts.output_dir)

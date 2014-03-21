@@ -135,6 +135,10 @@ def config_viz(tools_dir):
     json_link = os.path.join(data_dir,"json")
     if not os.path.islink(json_link):
         os.symlink("../../../../json", json_link)
+    db_dir = os.path.join(tools_dir,"../production/browser/data/db/")
+    if not os.path.exists(db_dir):
+        os.makedirs(db_dir)
+
 
 def download_tools (project_name, output_dir):
     """
@@ -189,20 +193,11 @@ def download_irc (archive_urls, dir_project):
         tfile.extractall(data_dir)
         tfile.close()
 
-    #wget http://bots.wmflabs.org/~wm-bot/logs/%23wikimedia-analytics/%23wikimedia-analytics.tar.gz
-    #wget http://bots.wmflabs.org/~wm-bot/logs/%23wikimedia-fundraising/%23wikimedia-fundraising.tar.gz
-    #mkdir wikimedia-analytics
-    #mkdir wikimedia-fundraising
-    #cd wikimedia-analytics/
-    #tar xfz ../#wikimedia-analytics.tar.gz
-    #cd ..
-    #cd wikimedia-fundraising
-    #tar xfz ../#wikimedia-fundraising.tar.gz
-    #cd ../..
-
-
-def get_config_generic():
+def get_config_generic(project_data):
     global project_name
+    # db names
+    db_prefix = "cp"
+    db_suffix = project_name
     # Keep the order using a list
     vars = [
             ["config_generator","create_project"],
@@ -211,20 +206,22 @@ def get_config_generic():
             ["db_user","root"],
             ["db_password",""],
             ["bicho_backend","bugzilla"],
-            ["db_bicho","acs_bicho_automatortest_cp"],
-            ["db_cvsanaly","acs_cvsanaly_automatortest_cp"],
-            ["db_identities","acs_cvsanaly_automatortest_cp"],
-            ["db_mlstats","acs_mlstats_automatortest_cp"],
-            ["db_gerrit","acs_gerrit_automatortest_cp"],
-            ["db_irc","acs_irc_automatortest_cp"],
-            ["db_mediawiki","acs_mediawiki_automator_test_cp"]
+            ["db_bicho",db_prefix+"_bicho_"+db_suffix],
+            ["db_cvsanaly",db_prefix+"_cvsanaly_"+db_suffix],
+            ["db_identities",db_prefix+"_cvsanaly_"+db_suffix],
+            ["db_mlstats",db_prefix+"_mlstats_"+db_suffix],
+            ["db_gerrit",db_prefix+"_gerrit_"+db_suffix],
+            ["db_irc",db_prefix+"_irc_"+db_suffix],
+            ["db_mediawiki",db_prefix+"_mediawiki_"+db_suffix]
         ]
     return vars
 
-def get_config_bicho():
-    trackers  = 'https://bugzilla.wikimedia.org/buglist.cgi?product=Huggle,'
-    trackers += 'https://bugzilla.wikimedia.org/buglist.cgi?product=Analytics,'
-    trackers += '"https://bugzilla.wikimedia.org/buglist.cgi?product=analytics&component=kraken",'
+def get_config_bicho(project_data):
+    print(project_data)
+    trackers = ",".join(project_data['trackers'])
+#    trackers  = 'https://bugzilla.wikimedia.org/buglist.cgi?product=Huggle,'
+#    trackers += 'https://bugzilla.wikimedia.org/buglist.cgi?product=Analytics,'
+#    trackers += '"https://bugzilla.wikimedia.org/buglist.cgi?product=analytics&component=kraken",'
     # trackers += '"https://bugzilla.wikimedia.org/buglist.cgi?product=Parsoid",'
     # trackers += '"https://bugzilla.wikimedia.org/buglist.cgi?product=VisualEditor"'
     vars = [
@@ -236,8 +233,9 @@ def get_config_bicho():
         ]
     return vars
 
-def get_config_gerrit():
-    projects = '"mediawiki/extensions/Cite","mediawiki/extensions/ArticleFeedback"'
+def get_config_gerrit(project_data):
+    # projects = '"mediawiki/extensions/Cite","mediawiki/extensions/ArticleFeedback"'
+    projects = ",".join(project_data['gerrit_projects'])
     vars = [
         ["backend","gerrit"],
         ["# user","gerrit user name account"],
@@ -250,34 +248,40 @@ def get_config_gerrit():
     ]
     return vars
 
-def get_config_cvsanaly():
+def get_config_cvsanaly(project_data):
+    # TODO: not used yet in Automator
+    source  = ",".join(project_data['source'])
     vars = [
             ["extensions","CommitsLOC,FileTypes"]
             ]
     return vars
 
-def get_config_mlstats():
-    mailing_lists  = "http://lists.wikimedia.org/pipermail/mediawiki-announce,"
-    mailing_lists += "http://lists.wikimedia.org/pipermail/mediawiki-api-announce"
+def get_config_mlstats(project_data):
+#    mailing_lists  = "http://lists.wikimedia.org/pipermail/mediawiki-announce,"
+#    mailing_lists += "http://lists.wikimedia.org/pipermail/mediawiki-api-announce"
+    mailing_lists = ",".join(project_data['mailing_lists'])
     vars = [
             ["mailing_lists", mailing_lists]
             ]
     return vars
 
-def get_config_irc():
+def get_config_irc(project_data):
+    # TODO: not used yet in Automator
+    irc_channels = ",".join(project_data['irc_channels'])
     vars = [
             ["format","plain"]
             ]
     return vars
 
-def get_config_mediawiki():
-    sites = "http://openstack.redhat.com"
+def get_config_mediawiki(project_data):
+    # sites = "http://openstack.redhat.com"
+    sites = ",".join(project_data['mediawiki_sites'])
     vars = [
             ["sites", sites]
     ]
     return vars
 
-def get_config_r():
+def get_config_r(project_data):
     vars = [
             ["rscript","run-analysis.py"],
             ["start_date","2010-01-01"],
@@ -287,36 +291,36 @@ def get_config_r():
     ]
     return vars
 
-def get_config_identities():
+def get_config_identities(project_data):
     vars = [
             ["countries","debug"],
             ["companies","debug"],
     ]
     return vars
 
-def get_config_git_production():
+def get_config_git_production(project_data):
     vars = [
             ["destination_json","production/browser/data/json/"]
     ]
     return vars
 
-def get_config_db_dump():
+def get_config_db_dump(project_data):
     vars = [
             ["destination_db_dump","production/browser/data/db/"]
     ]
 
     return vars
 
-def get_config_rsync():
+def get_config_rsync(project_data):
     vars = [
             ["destination","yourmaildomain@activity.AutomatorTest.org:/var/www/dash/"]
     ]
     return vars
 
-def check_config_file(config_file):
+def check_config_file(project_data):
     pass
 
-def create_project_config(name, output_dir):
+def create_project_config(name, project_data, output_dir):
     """Create Automator project config file."""
 
     parser = SafeConfigParser()
@@ -341,7 +345,7 @@ def create_project_config(name, output_dir):
                 ]
     for section in sections:
         parser.add_section(section[0])
-        config_vars = section[1]()
+        config_vars = section[1](project_data)
         for var in config_vars:
             parser.set(section[0], var[0], var[1])
 
@@ -358,6 +362,6 @@ if __name__ == '__main__':
         create_project_dirs(project_name, opts.output_dir)
         project_dir = os.path.join(opts.output_dir, project_name)
         download_gits(projects[project]['source'], project_dir)
-        create_project_config(project_name, opts.output_dir)
+        create_project_config(project_name, projects[project], opts.output_dir)
         download_tools(project_name, opts.output_dir)
         download_irc(projects[project]['irc_channels'], project_dir)

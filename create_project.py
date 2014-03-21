@@ -187,6 +187,7 @@ def download_irc (archive_urls, dir_project):
             os.makedirs(data_dir)
         tfile = tarfile.open(file_path, 'r:gz')
         tfile.extractall(data_dir)
+        tfile.close()
 
     #wget http://bots.wmflabs.org/~wm-bot/logs/%23wikimedia-analytics/%23wikimedia-analytics.tar.gz
     #wget http://bots.wmflabs.org/~wm-bot/logs/%23wikimedia-fundraising/%23wikimedia-fundraising.tar.gz

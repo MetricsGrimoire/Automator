@@ -195,7 +195,6 @@ def download_irc (archive_urls, dir_project):
 
 def get_config_generic(project_data):
     global project_name
-    # db names
     db_prefix = "cp"
     db_suffix = project_name
     # Keep the order using a list
@@ -205,14 +204,21 @@ def get_config_generic(project_data):
             ["project",project_name],
             ["db_user","root"],
             ["db_password",""],
-            ["db_bicho",db_prefix+"_bicho_"+db_suffix],
-            ["db_cvsanaly",db_prefix+"_cvsanaly_"+db_suffix],
-            ["db_identities",db_prefix+"_cvsanaly_"+db_suffix],
-            ["db_mlstats",db_prefix+"_mlstats_"+db_suffix],
-            ["db_gerrit",db_prefix+"_gerrit_"+db_suffix],
-            ["db_irc",db_prefix+"_irc_"+db_suffix],
-            ["db_mediawiki",db_prefix+"_mediawiki_"+db_suffix]
+            ["db_identities",db_prefix+"_cvsanaly_"+db_suffix]
         ]
+    if "source" in project_data:
+        vars.append(["db_cvsanaly",db_prefix+"_cvsanaly_"+db_suffix])
+    if "trackers" in project_data:
+        vars.append(["db_bicho",db_prefix+"_bicho_"+db_suffix])
+    if "gerrit_projects" in project_data:
+        vars.append(["db_gerrit",db_prefix+"_gerrit_"+db_suffix])
+    if "mailing_lists" in project_data:
+        vars.append(["db_mlstats",db_prefix+"_mlstats_"+db_suffix])
+    if "irc_channels" in project_data:
+        vars.append(["db_irc",db_prefix+"_irc_"+db_suffix])
+    if "mediawiki_sites" in project_data:
+        vars.append(["db_mediawiki",db_prefix+"_mediawiki_"+db_suffix])
+
     return vars
 
 def get_bicho_backend(repos):
@@ -260,8 +266,6 @@ def get_config_cvsanaly(project_data):
     return vars
 
 def get_config_mlstats(project_data):
-#    mailing_lists  = "http://lists.wikimedia.org/pipermail/mediawiki-announce,"
-#    mailing_lists += "http://lists.wikimedia.org/pipermail/mediawiki-api-announce"
     mailing_lists = ",".join(project_data['mailing_lists'])
     vars = [
             ["mailing_lists", mailing_lists]
@@ -347,6 +351,18 @@ def create_project_config(name, project_data, output_dir):
                 ["rsync",get_config_rsync]
                 ]
     for section in sections:
+        if section[0] == "cvsanaly" and not "source" in project_data:
+            continue
+        elif section[0] == "bicho" and not "trackers" in project_data:
+            continue
+        elif section[0] == "gerrit" and not "gerrit_projects" in project_data:
+            continue
+        elif section[0] == "mlstats" and not "mailing_lists" in project_data:
+            continue
+        elif section[0] == "irc" and not "irc_channels" in project_data:
+            continue
+        elif section[0] == "mediawiki" and not "mediawiki_sites" in project_data:
+            continue
         parser.add_section(section[0])
         config_vars = section[1](project_data)
         for var in config_vars:
@@ -364,7 +380,8 @@ if __name__ == '__main__':
         logging.info("Creating automator projects under: " + opts.output_dir)
         create_project_dirs(project_name, opts.output_dir)
         project_dir = os.path.join(opts.output_dir, project_name)
-        download_gits(projects[project]['source'], project_dir)
+        # download_gits(projects[project]['source'], project_dir)
         create_project_config(project_name, projects[project], opts.output_dir)
         download_tools(project_name, opts.output_dir)
-        download_irc(projects[project]['irc_channels'], project_dir)
+        if 'irc_channels' in projects[project]:
+            download_irc(projects[project]['irc_channels'], project_dir)

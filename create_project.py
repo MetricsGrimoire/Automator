@@ -168,7 +168,26 @@ def download_gits (git_repos, dir_project):
     os.chdir(path_orig)
 
 def download_irc (archive_urls, dir_project):
-    pass
+    """Download IRC logs from URLs. One channel per URL in tgz format."""
+    import tarfile
+    irc_dir = os.path.join(dir_project,"irc")
+    for url in archive_urls:
+        # Remove delimiters.
+        url = url.replace("\"","").replace("'","")
+
+        i = url.rfind('/')
+        file_name = url[i+1:]
+        file_path = os.path.join(irc_dir,file_name)
+        logging.info("Downloading IRC channel archive " + url)
+        urllib.urlretrieve(url, file_path)
+        # File supported "tar.gz"
+        data_dir = file_name.replace(".tar.gz","")
+        data_dir = os.path.join(irc_dir,data_dir)
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+        tfile = tarfile.open(file_path, 'r:gz')
+        tfile.extractall(data_dir)
+
     #wget http://bots.wmflabs.org/~wm-bot/logs/%23wikimedia-analytics/%23wikimedia-analytics.tar.gz
     #wget http://bots.wmflabs.org/~wm-bot/logs/%23wikimedia-fundraising/%23wikimedia-fundraising.tar.gz
     #mkdir wikimedia-analytics
@@ -340,3 +359,4 @@ if __name__ == '__main__':
         download_gits(projects[project]['source'], project_dir)
         create_project_config(project_name, opts.output_dir)
         download_tools(project_name, opts.output_dir)
+        download_irc(projects[project]['irc_channels'], project_dir)

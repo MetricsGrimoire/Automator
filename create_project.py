@@ -205,7 +205,6 @@ def get_config_generic(project_data):
             ["project",project_name],
             ["db_user","root"],
             ["db_password",""],
-            ["bicho_backend","bugzilla"],
             ["db_bicho",db_prefix+"_bicho_"+db_suffix],
             ["db_cvsanaly",db_prefix+"_cvsanaly_"+db_suffix],
             ["db_identities",db_prefix+"_cvsanaly_"+db_suffix],
@@ -216,16 +215,20 @@ def get_config_generic(project_data):
         ]
     return vars
 
+def get_bicho_backend(repos):
+    """Try to find the bicho backend"""
+    backend = "bg"
+    if repos[0].find("bugzilla") > -1:
+        backend = "bg"
+    elif repos[0].find("launchpad") > -1:
+        backend = "launchpad"
+    return backend
+
 def get_config_bicho(project_data):
-    print(project_data)
+    backend = get_bicho_backend(project_data['trackers'])
     trackers = ",".join(project_data['trackers'])
-#    trackers  = 'https://bugzilla.wikimedia.org/buglist.cgi?product=Huggle,'
-#    trackers += 'https://bugzilla.wikimedia.org/buglist.cgi?product=Analytics,'
-#    trackers += '"https://bugzilla.wikimedia.org/buglist.cgi?product=analytics&component=kraken",'
-    # trackers += '"https://bugzilla.wikimedia.org/buglist.cgi?product=Parsoid",'
-    # trackers += '"https://bugzilla.wikimedia.org/buglist.cgi?product=VisualEditor"'
     vars = [
-            ["backend","bg"],
+            ["backend",backend],
             ["debug","True"],
             ["delay","1"],
             ["log_table","False"],

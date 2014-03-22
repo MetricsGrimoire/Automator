@@ -233,6 +233,8 @@ def get_bicho_backend(repos):
 def get_config_bicho(project_data):
     backend = get_bicho_backend(project_data['trackers'])
     trackers = ",".join(project_data['trackers'])
+    # avoid interpolation in ConfigParser
+    trackers = trackers.replace("%","%%")
     vars = [
             ["backend",backend],
             ["debug","True"],
@@ -275,6 +277,9 @@ def get_config_mlstats(project_data):
 def get_config_irc(project_data):
     # TODO: not used yet in Automator
     irc_channels = ",".join(project_data['irc_channels'])
+    # avoid interpolation in ConfigParser
+    irc_channels = irc_channels.replace("%","%%")
+
     vars = [
             ["format","plain"]
             ]
@@ -346,10 +351,11 @@ def create_project_config(name, project_data, output_dir):
                 ["mediawiki",get_config_mediawiki],
                 ["r",get_config_r],
                 ["identities",get_config_identities],
-                ["git-production",get_config_git_production],
+                ["git-production_OFF",get_config_git_production],
                 ["db-dump",get_config_db_dump],
-                ["rsync",get_config_rsync]
+                ["rsync_OFF",get_config_rsync]
                 ]
+
     for section in sections:
         if section[0] == "cvsanaly" and not "source" in project_data:
             continue
@@ -380,7 +386,7 @@ if __name__ == '__main__':
         logging.info("Creating automator projects under: " + opts.output_dir)
         create_project_dirs(project_name, opts.output_dir)
         project_dir = os.path.join(opts.output_dir, project_name)
-        # download_gits(projects[project]['source'], project_dir)
+        download_gits(projects[project]['source'], project_dir)
         create_project_config(project_name, projects[project], opts.output_dir)
         download_tools(project_name, opts.output_dir)
         if 'irc_channels' in projects[project]:

@@ -228,7 +228,6 @@ def launch_cvsanaly():
         update_scm()
         compose_msg("cvsanaly is being executed")
         launched = False
-        extensions = options['cvsanaly']['extensions']
         db_name = options['generic']['db_cvsanaly']
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
@@ -239,8 +238,13 @@ def launch_cvsanaly():
         for r in repos:
             launched = True
             os.chdir(r)
-            cmd = tools['scm'] + " -u %s -p %s -d %s --extensions=%s >> %s 2>&1" \
-                        %(db_user, db_pass, db_name, extensions, msg_body)
+            if options['cvsanaly'].has_key('extensions'):
+                cmd = tools['scm'] + " -u %s -p %s -d %s --extensions=%s >> %s 2>&1" \
+                        %(db_user, db_pass, db_name, options['cvsanaly']['extensions'], msg_body)
+            else:
+                cmd = tools['scm'] + " -u %s -p %s -d %s >> %s 2>&1" \
+                        %(db_user, db_pass, db_name, msg_body)
+                
             compose_msg(cmd)
             os.system(cmd)
 

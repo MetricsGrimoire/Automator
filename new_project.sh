@@ -14,6 +14,7 @@ mkdir -p $1/log
 mkdir -p $1/production
 mkdir -p $1/scm
 mkdir -p $1/tools
+mldir -p $1/scripts
 
 # Copy config template
 cp main.conf $1/conf

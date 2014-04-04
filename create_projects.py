@@ -87,7 +87,7 @@ def create_project_dirs(name, output_dir):
     if not os.path.exists(project_dir): 
         os.makedirs(project_dir)
 
-    basic_dirs = ["conf","irc","json","log","production","scm","tools"]
+    basic_dirs = ["conf","irc","json","log","production","scm","scripts","tools"]
 
     for dir in basic_dirs:
         new_dir = os.path.join(project_dir,dir)

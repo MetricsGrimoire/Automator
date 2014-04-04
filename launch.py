@@ -101,6 +101,7 @@ def initialize_globals(pdir):
     global conf_dir
     global downs_dir
     global json_dir
+    global scripts_dir
     global production_dir
     global identities_dir
     global downloads_dir
@@ -113,6 +114,7 @@ def initialize_globals(pdir):
     conf_dir = project_dir + '/conf/'
     downs_dir = project_dir + '/downloads/'
     json_dir = project_dir + '/json/'
+    scripts_dir = project_dir + '/scripts/'
     production_dir = project_dir + '/production/'
     # identities_dir = project_dir + '/tools/VizGrimoireR/misc/'
     identities_dir = project_dir + '/tools/VizGrimoireUtils/identities/'
@@ -134,7 +136,7 @@ def read_main_conf():
             # first, some special cases
             if o == 'debug':
                 options[s][o] = parser.getboolean(s,o)
-            elif o == 'trackers' or o == 'projects':
+            elif o in ('trackers', 'projects', 'pre_scripts', 'post_scripts'):
                 data_sources = parser.get(s,o).split(',')
                 options[s][o] = [ds.replace('\n', '') for ds in data_sources]
             else:
@@ -220,6 +222,31 @@ def launch_checkdbs():
             db.close()
             print (dbname+" created")
 
+def launch_scripts(scripts):
+    # Run a list of scripts
+    for script in scripts:
+        cmd = os.path.join(scripts_dir, script) + " >> %s 2>&1" % msg_body
+
+        compose_msg("Running %s" % cmd)
+        os.system(cmd)
+        compose_msg("%s script completed" % script)
+
+def launch_pre_tool_scripts(tool):
+    if options[tool].has_key('pre_scripts'):
+        compose_msg("Running %s pre scripts" % tool)
+        launch_scripts(options[tool]['pre_scripts'])
+        compose_msg("%s pre scripts completed" % tool)
+    else:
+        compose_msg("No %s pre scripts configured" % tool)
+
+def launch_post_tool_scripts(tool):
+    if options[tool].has_key('post_scripts'):
+        compose_msg("Running %s post scripts" % tool)
+        launch_scripts(options[tool]['post_scripts'])
+        compose_msg("%s post scripts completed" % tool)
+    else:
+        compose_msg("No %s post scripts configured" % tool)
+
 def launch_cvsanaly():
     # using the conf executes cvsanaly for the repos inside scm dir
     if options.has_key('cvsanaly'):
@@ -235,6 +262,10 @@ def launch_cvsanaly():
 
         # we launch cvsanaly against the repos
         repos = get_scm_repos()
+
+        # pre-scripts
+        launch_pre_tool_scripts('cvsanaly')
+
         for r in repos:
             launched = True
             os.chdir(r)
@@ -244,12 +275,15 @@ def launch_cvsanaly():
             else:
                 cmd = tools['scm'] + " -u %s -p %s -d %s >> %s 2>&1" \
                         %(db_user, db_pass, db_name, msg_body)
-                
+
             compose_msg(cmd)
             os.system(cmd)
 
         if launched:
             compose_msg("[OK] cvsanaly executed")
+
+            # post-scripts
+            launch_post_tool_scripts('cvsanaly')
         else:
             compose_msg("[SKIPPED] cvsanaly was not executed")
     else:
@@ -289,6 +323,9 @@ def launch_bicho():
         cont = 0
         last = len(trackers)
 
+        # pre-scripts
+        launch_pre_tool_scripts('bicho')
+
         for t in trackers:
             launched = True
             cont = cont + 1
@@ -305,6 +342,9 @@ def launch_bicho():
             os.system(cmd)
         if launched:
             compose_msg("[OK] bicho executed")
+
+            # post-scripts
+            launch_post_tool_scripts('bicho')
         else:
             compose_msg("[SKIPPED] bicho was not executed")
     else:
@@ -336,6 +376,9 @@ def launch_gerrit():
         if debug:
             flags = flags + " -g"
 
+        # pre-scripts
+        launch_pre_tool_scripts('gerrit')
+
         # we'll only create the log table in the last execution
         cont = 0
         last = len(projects)
@@ -358,6 +401,9 @@ def launch_gerrit():
 
         if launched:
             compose_msg("[OK] bicho (gerrit) executed")
+
+            # post-scripts
+            launch_post_tool_scripts('gerrit')
         else:
             compose_msg("[SKIPPED] bicho (gerrit) not executed")
     else:
@@ -383,6 +429,9 @@ def launch_mlstats():
             if options['mlstats']['force'] is True:
                 force = '--force'
 
+        # pre-scripts
+        launch_pre_tool_scripts('mlstats')
+
         for m in mlists.split(","):
             launched = True
             cmd = tools['mls'] + " %s --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"%s\" \"%s\" >> %s 2>&1" \
@@ -391,6 +440,9 @@ def launch_mlstats():
             os.system(cmd)
         if launched:
             compose_msg("[OK] mlstats executed")
+
+            # post-scripts
+            launch_post_tool_scripts('mlstats')
         else:
             compose_msg("[SKIPPED] mlstats not executed")
     else:
@@ -412,6 +464,10 @@ def launch_irc():
             format = options['irc']['format']
         channels = os.listdir(irc_dir)
         os.chdir(irc_dir)
+
+        # pre-scripts
+        launch_pre_tool_scripts('irc')
+
         for channel in channels:
             if not os.path.isdir(os.path.join(irc_dir,channel)): continue
             launched = True
@@ -421,6 +477,9 @@ def launch_irc():
             os.system(cmd)
         if launched:
             compose_msg("[OK] irc_analysis executed")
+
+            # post-scripts
+            launch_post_tool_scripts('irc')
         else:
             compose_msg("[SKIPPED] irc_analysis not executed")
     else:
@@ -439,6 +498,9 @@ def launch_mediawiki():
         db_name = options['generic']['db_mediawiki']
         sites = options['mediawiki']['sites']
 
+        # pre-scripts
+        launch_pre_tool_scripts('mediawiki')
+
         for site in sites.split(","):
             launched = True
             # ./mediawiki_analysis.py --database acs_mediawiki_rdo_2478 --db-user root --url http://openstack.redhat.com
@@ -448,6 +510,9 @@ def launch_mediawiki():
             os.system(cmd)
         if launched:
             compose_msg("[OK] mediawiki_analysis executed")
+
+            # post-scripts
+            launch_post_tool_scripts('mediawiki')
         else:
             compose_msg("[SKIPPED] mediawiki_analysis not executed")
     else:

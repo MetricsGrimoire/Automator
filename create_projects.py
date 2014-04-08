@@ -49,7 +49,12 @@ def read_options():
                       action="store",
                       dest="output_dir",
                       default = "projects",
-                      help="Directory in which to store the Automator projects")
+                      help="Directory in which to store the Automator projects or the web")
+    parser.add_option("-w", "--web",
+                      action="store_true",
+                      dest="web",
+                      help="Create a web portal for all projects")
+
 
     (opts, args) = parser.parse_args()
     if len(args) != 0:
@@ -57,6 +62,9 @@ def read_options():
 
     if not(opts.project_file):
         parser.error("--project is needed")
+
+    if opts.web and not opts.output_dir:
+        parser.error("--web needs also --dir")
 
     return opts
 
@@ -376,18 +384,41 @@ def create_project_config(name, project_data, output_dir):
 
     parser.write(fd)
 
+def create_projects(projects, destdir):
+    """Create projects dashboards"""
+    global project_name
+    for project in projects:
+        project_name = project
+        logging.info("Creating automator projects under: " + destdir)
+        create_project_dirs(project_name, destdir)
+        project_dir = os.path.join(destdir, project_name)
+        download_gits(projects[project]['source'], project_dir)
+        create_project_config(project_name, projects[project], destdir)
+        download_tools(project_name, destdir)
+        if 'irc_channels' in projects[project]:
+            download_irc(projects[project]['irc_channels'], project_dir)
+
+def create_web(projects, destdir):
+    """Create a web portal to access the projects dashboards"""
+    browser_url = "tools/VizGrimoireJS/browser/"
+    html_file = open(os.path.join(destdir,"projects.html"), 'w')
+    html = "<html><head><title></title></head><body>"
+    html += "<ul>"
+    for project in projects:
+        html += "<li><a href='%s/%s'>%s</a></li>" % (project,browser_url,project)
+    html += "</ul>"
+    html += "</body></html>"
+    html_file.write(html)
+    html_file.close()
+    logging.info("Created html file " + os.path.join(destdir,"projects.html"))
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s')
 
     opts = read_options()
     projects = get_project_repos(opts.project_file)
-    for project in projects:
-        project_name = project
-        logging.info("Creating automator projects under: " + opts.output_dir)
-        create_project_dirs(project_name, opts.output_dir)
-        project_dir = os.path.join(opts.output_dir, project_name)
-        download_gits(projects[project]['source'], project_dir)
-        create_project_config(project_name, projects[project], opts.output_dir)
-        download_tools(project_name, opts.output_dir)
-        if 'irc_channels' in projects[project]:
-            download_irc(projects[project]['irc_channels'], project_dir)
+
+    if opts.web:
+        create_web(projects, opts.output_dir)
+    else:
+        create_projects(projects, opts.output_dir)

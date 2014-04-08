@@ -536,6 +536,9 @@ def launch_downloads():
         os.system(cmd)
         compose_msg("[OK] downloads executed")
 
+def launch_sibyl():
+    # check if database with qaforums exists
+    pass
 
 def launch_rscripts():
     # reads data about r scripts for a conf file and execute it
@@ -930,6 +933,7 @@ tasks_section = {
     'irc': launch_irc,
     'mediawiki': launch_mediawiki,
     'downloads': launch_downloads,
+    'qaforums': launch_sibyl,
     'identities': launch_identity_scripts,
     'r':launch_rscripts,
     'copy-json': launch_copy_json,
@@ -940,7 +944,7 @@ tasks_section = {
     'vizjs':launch_vizjs_config
 }
 tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
-               'identities','r','copy-json', 'vizjs','git-production','db-dump','json-dump','rsync']
+               'qaforums','identities','r','copy-json', 'vizjs','git-production','db-dump','json-dump','rsync']
 
 if __name__ == '__main__':
     opt = get_options()   

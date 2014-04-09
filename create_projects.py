@@ -28,6 +28,7 @@
 
 import json
 import logging
+import MySQLdb
 from optparse import OptionParser
 import os.path
 from subprocess import call
@@ -35,16 +36,14 @@ import sys
 import urllib2, urllib
 from ConfigParser import SafeConfigParser
 
-project_name = None
-
 def read_options():
     """Read options from command line."""
     parser = OptionParser(usage="usage: %prog [options]",
                           version="%prog 0.1")
-    parser.add_option("-p", "--project",
+    parser.add_option("-p", "--projects",
                       action="store",
                       dest="project_file",
-                      help="File with the project repositories to be analyzed")
+                      help="File with the projects repositories to be analyzed")
     parser.add_option("-d", "--dir",
                       action="store",
                       dest="output_dir",
@@ -54,9 +53,22 @@ def read_options():
                       action="store_true",
                       dest="web",
                       help="Create a web portal for all projects")
+    parser.add_option("-s", "--single",
+                      action="store_true",
+                      dest="single_dash",
+                      help="Create a single dashboard with all projects.")
+    parser.add_option("--dbuser",
+                      action="store",
+                      dest="dbuser", default="root",
+                      help="db user name.")
+    parser.add_option("--dbpasswd",
+                      action="store",
+                      dest="dbpasswd", default="",
+                      help="db user password")
 
 
     (opts, args) = parser.parse_args()
+
     if len(args) != 0:
         parser.error("Wrong number of arguments")
 
@@ -65,6 +77,9 @@ def read_options():
 
     if opts.web and not opts.output_dir:
         parser.error("--web needs also --dir")
+
+    if opts.single_dash and not (opts.output_dir and opts.dbuser):
+        parser.error("--web needs also --dir --dbuser")
 
     return opts
 
@@ -201,9 +216,11 @@ def download_irc (archive_urls, dir_project):
         tfile.extractall(data_dir)
         tfile.close()
 
-def get_config_generic(project_data):
-    global project_name
-    db_prefix = "cp"
+def get_db_prefix():
+    return "cp"
+
+def get_config_generic(project_name, project_data):
+    db_prefix = get_db_prefix()
     db_suffix = project_name
     # Keep the order using a list
     vars = [
@@ -340,6 +357,11 @@ def get_config_rsync(project_data):
 def check_config_file(project_data):
     pass
 
+def get_data_sources():
+    """Each data source will contains repository in a comma separated list"""
+    return ["source","trackers","gerrit_projects",
+            "mailing_lists","irc_channels","mediawiki_sites"]
+
 def create_project_config(name, project_data, output_dir):
     """Create Automator project config file."""
 
@@ -378,25 +400,179 @@ def create_project_config(name, project_data, output_dir):
         elif section[0] == "mediawiki" and not "mediawiki_sites" in project_data:
             continue
         parser.add_section(section[0])
-        config_vars = section[1](project_data)
+        if section[0] == "generic":
+            config_vars = section[1](name, project_data)
+        else:
+            config_vars = section[1](project_data)
         for var in config_vars:
             parser.set(section[0], var[0], var[1])
 
     parser.write(fd)
 
+def create_project(name, data, destdir):
+    logging.info("Creating automator projects under: " + destdir)
+    create_project_dirs(name, destdir)
+    project_dir = os.path.join(destdir, name)
+    download_gits(data['source'], project_dir)
+    create_project_config(name, data, destdir)
+    download_tools(name, destdir)
+    if 'irc_channels' in data:
+        download_irc(data['irc_channels'], project_dir)
+
 def create_projects(projects, destdir):
     """Create projects dashboards"""
-    global project_name
     for project in projects:
-        project_name = project
-        logging.info("Creating automator projects under: " + destdir)
-        create_project_dirs(project_name, destdir)
-        project_dir = os.path.join(destdir, project_name)
-        download_gits(projects[project]['source'], project_dir)
-        create_project_config(project_name, projects[project], destdir)
-        download_tools(project_name, destdir)
-        if 'irc_channels' in projects[project]:
-            download_irc(projects[project]['irc_channels'], project_dir)
+        create_project (project, projects[project], destdir)
+
+def create_projects_schema(db_name):
+    opts = read_options()
+    db_user = opts.dbuser
+    db_password = opts.dbpasswd
+
+    db = MySQLdb.connect(user = db_user, passwd = db_password,  db = db_name)
+    cursor = db.cursor()
+
+    project_table = """
+        CREATE TABLE projects (
+            project_id int(11) NOT NULL AUTO_INCREMENT,
+            id varchar(255) NOT NULL,
+            title varchar(255) NOT NULL,
+            PRIMARY KEY (project_id)
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+    """
+    project_repositories_table = """
+        CREATE TABLE project_repositories (
+            project_id int(11) NOT NULL,
+            data_source varchar(32) NOT NULL,
+            repository_name varchar(255) NOT NULL,
+            UNIQUE (project_id, data_source, repository_name)
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+    """
+    project_children_table = """
+        CREATE TABLE project_children (
+            project_id int(11) NOT NULL,
+            subproject_id int(11) NOT NULL,
+            UNIQUE (project_id, subproject_id)
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+    """
+
+    # The data in tables is created automatically.
+    # No worries about dropping tables.
+    cursor.execute("DROP TABLE IF EXISTS projects")
+    cursor.execute("DROP TABLE IF EXISTS project_repositories")
+    cursor.execute("DROP TABLE IF EXISTS project_children")
+
+    cursor.execute(project_table)
+    cursor.execute(project_repositories_table)
+    cursor.execute(project_children_table)
+
+    db.close()
+
+def get_project_children(project_key, projects):
+    """returns and array with the project names of its children"""
+    children = []
+    for project in projects:
+        data = projects[project]
+        if not 'parent_project' in data: return children
+        if (len(data['parent_project']) == 0):
+            continue
+        else:
+            parent = data['parent_project'][0]['id']
+            if parent == project_key:
+                children.append(project)
+                children += get_project_children(project, projects)
+    return children
+
+def fill_projects(db_name, projects):
+    opts = read_options()
+    db_user = opts.dbuser
+    db_password = opts.dbpasswd
+    db = MySQLdb.connect(user = db_user, passwd = db_password,  db = db_name)
+    cursor = db.cursor()
+
+    projects_db = {}
+    for key in projects:
+        q = "INSERT INTO projects (title, id) values (%s, %s)"
+        cursor.execute(q, (key, key))
+        projects_db[key] = db.insert_id()
+    logging.info("Projects added to " + db_name)
+
+    # Insert children for all projects
+    for project in projects_db:
+        children = get_project_children(project, projects)
+        for child in children:
+            q = "INSERT INTO project_children (project_id, subproject_id) values (%s, %s)"
+            project_id = projects_db[project]
+            subproject_id = projects_db[child]
+            cursor.execute(q, (project_id, subproject_id))
+    logging.info("Projects children added")
+
+    def insert_repos(project_id, repos, data_source):
+        for repo in repos:
+            repo = repo.replace('"','')
+            q = "INSERT INTO project_repositories VALUES (%s, %s, %s)"
+            cursor.execute(q, (project_id, data_source, repo))
+
+    # Maps tool data sources to Grimoire Platform ds names
+    ds_to_ds = {
+        "source":"scm",
+        "trackers":"its",
+        "gerrit_projects":"scr",
+        "mailing_lists":"mls",
+        "irc_channels":"irc",
+        "mediawiki_sites":"mediawiki"
+    }
+
+    for project in projects_db:
+        for ds in get_data_sources():
+            if ds in projects[project]:
+                repos = projects[project][ds]
+                if ds in ds_to_ds.keys():
+                    insert_repos(projects_db[project], repos, ds_to_ds[ds])
+    db.close()
+
+
+def create_db(db_name):
+    opts = read_options()
+    db_user = opts.dbuser
+    db_password = opts.dbpasswd
+
+    try:
+         db = MySQLdb.connect(user = db_user, passwd = db_password,  db = db_name)
+         db.close()
+         logging.info (db_name+" already exists")
+    except:
+        db = MySQLdb.connect(user = db_user, passwd = db_password)
+        cursor = db.cursor()
+        query = "CREATE DATABASE " + db_name + " CHARACTER SET utf8 COLLATE utf8_unicode_ci"
+        cursor.execute(query)
+        db.close()
+        logging.info (db_name+" created")
+
+def create_single_dash(projects, destdir):
+    """Create a single dashboard with all projects"""
+    opts = read_options()
+    logging.info("Creating a single dashboard with all projects")
+    # Create project env
+    logging.info("Joining all repositories for different projects")
+    single_project_name = "SingleProject"
+    single_project_data = {}
+    for project in projects:
+        for ds in get_data_sources():
+            if ds in projects[project]:
+                if ds not in single_project_data:
+                    single_project_data[ds] = []
+                else:
+                    single_project_data[ds] += projects[project][ds]
+
+    # Create db for identities
+    db_identities = get_db_prefix()+"_cvsanaly_"+single_project_name
+    create_db(db_identities)
+    # Create projects tables
+    create_projects_schema(db_identities)
+    # Fill projects tables
+    fill_projects(db_identities, projects)
+
 
 def create_web(projects, destdir):
     """Create a web portal to access the projects dashboards"""
@@ -420,5 +596,7 @@ if __name__ == '__main__':
 
     if opts.web:
         create_web(projects, opts.output_dir)
+    elif opts.single_dash:
+        create_single_dash(projects, opts.output_dir)
     else:
         create_projects(projects, opts.output_dir)

@@ -410,7 +410,7 @@ def create_project_config(name, project_data, output_dir):
     parser.write(fd)
 
 def create_project(name, data, destdir):
-    logging.info("Creating automator projects under: " + destdir)
+    logging.info("Creating automator project %s under %s " % (name, destdir))
     create_project_dirs(name, destdir)
     project_dir = os.path.join(destdir, name)
     download_gits(data['source'], project_dir)
@@ -572,7 +572,8 @@ def create_single_dash(projects, destdir):
     create_projects_schema(db_identities)
     # Fill projects tables
     fill_projects(db_identities, projects)
-
+    # Create automator config
+    create_project(single_project_name, single_project_data, destdir)
 
 def create_web(projects, destdir):
     """Create a web portal to access the projects dashboards"""

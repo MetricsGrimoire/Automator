@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2012-2013 Bitergia
+# Copyright (C) 2012-2014 Bitergia
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 # the parameters. Finally it execute R scripts in order to generate the
 # JSON files
 
+import logging
 import os
 import subprocess
 import sys
@@ -78,12 +79,14 @@ def get_options():
                       help='Disable messages in standard output', default=False)
     parser.add_option('-s','--section', dest='section',
                      help='Section to be executed', default=None)
-    parser.add_option('-t','--subtask', dest='subtask',
+    parser.add_option('-t','--data-source', dest='subtask',
                      help='Sub section to be executed (only for r)', default=None)
+    parser.add_option('--filter', dest='filter',
+                     help='Filter to be used (repository, company, project, country ...)', default=None)
     parser.add_option('-g', '--debug', action='store_true', dest='debug',
                         help='Enable debug mode', default=False)
     parser.add_option('--python', dest='python', action="store_true",
-                      help='Use python script for getting metrics.')
+                      help='Use python script for getting metrics. (obsolete)')
 
     (ops, args) = parser.parse_args()
 
@@ -540,40 +543,40 @@ def launch_sibyl():
     # check if database with qaforums exists
     pass
 
-def launch_rscripts():
-    # reads data about r scripts for a conf file and execute it
-    if options.has_key('r'):
+def launch_metrics_scripts():
+    # Execute metrics tool using the automator config
+    if options.has_key('metrics') or options.has_key('r'):
         if not check_tool(tools['r']):
             return
 
-        compose_msg("R scripts being launched")
+        compose_msg("metrics tool being launched")
 
+        r_libs = '../../r-lib'
+        python_libs = '../vizgrimoire'
+        json_dir = '../../../json'
         conf_file = project_dir + '/conf/main.conf'
 
-        # script = options['r']['rscript']
-        script = "run-analysis.py"
-        # path = options['r']['rscripts_path']
+        metrics_tool = "report_tool.py"
         path = r_dir
 
         params = get_options()
 
-        r_section = ''
+        metrics_section = ''
         if params.subtask:
-            r_section = "-s " + params.subtask
-        if params.debug:
-            r_section += " -g "
-        python_scripts = ""
-        if params.python:
-            python_scripts = "--python"
+            metrics_section = "--data-source " + params.subtask
+        if params.filter:
+            metrics_section = "--filter " + params.filter
 
         os.chdir(path)
-        cmd = "./%s -f %s %s %s >> %s 2>&1" % (script, conf_file, r_section, python_scripts, msg_body)
+        logging.info(path)
+        cmd = "LANG= R_LIBS=%s PYTHONPATH=%s ./%s -c %s -o %s %s >> %s 2>&1" % (r_libs, python_libs, metrics_tool, conf_file, json_dir, metrics_section, msg_body)
+        logging.info(cmd)
         compose_msg(cmd)
         os.system(cmd)
 
-        compose_msg("[OK] R scripts executed")
+        compose_msg("[OK] metrics tool executed")
     else:
-        compose_msg("[SKIPPED] R scripts were not executed, no conf available")
+        compose_msg("[SKIPPED] Metrics tool was not executed, no conf available")
 
 def get_ds_identities_cmd(db, type):
     idir = identities_dir
@@ -935,7 +938,8 @@ tasks_section = {
     'downloads': launch_downloads,
     'qaforums': launch_sibyl,
     'identities': launch_identity_scripts,
-    'r':launch_rscripts,
+    'metrics':launch_metrics_scripts,
+    'r':launch_metrics_scripts, # compatibility support
     'copy-json': launch_copy_json,
     'git-production':launch_commit_jsones,
     'db-dump':launch_database_dump,
@@ -944,7 +948,7 @@ tasks_section = {
     'vizjs':launch_vizjs_config
 }
 tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
-               'qaforums','identities','r','copy-json', 'vizjs','git-production','db-dump','json-dump','rsync']
+               'qaforums','identities','metrics','copy-json', 'vizjs','git-production','db-dump','json-dump','rsync']
 
 if __name__ == '__main__':
     opt = get_options()   

@@ -557,13 +557,13 @@ def create_single_dash(projects, destdir):
     logging.info("Joining all repositories for different projects")
     single_project_name = "SingleProject"
     single_project_data = {}
+
     for project in projects:
         for ds in get_data_sources():
             if ds in projects[project]:
                 if ds not in single_project_data:
                     single_project_data[ds] = []
-                else:
-                    single_project_data[ds] += projects[project][ds]
+                single_project_data[ds] += projects[project][ds]
 
     # Create db for identities
     db_identities = get_db_prefix()+"_cvsanaly_"+single_project_name

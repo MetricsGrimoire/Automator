@@ -832,6 +832,26 @@ def write_json_config(data, filename):
     jsonfile.write(json.dumps(data, indent=4, sort_keys=True))
     jsonfile.close()
 
+def launch_metricsdef_config():
+    filename = os.path.join(production_dir, "data", "metrics.json")
+    compose_msg("Writing metrics definition in: " + filename)
+    # We need access to GrimoireLib
+    grimoirelib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire")
+    compose_msg("Loading GrimoireLib from " + grimoirelib)
+    sys.path.append(grimoirelib)
+    import report
+    report.Report.init(os.path.join(conf_dir,"main.conf"))
+    dss_active = report.Report.get_data_sources()
+    all_metricsdef = {}
+    for ds in dss_active:
+        compose_msg("Metrics def for " + ds.get_name())
+        metricsdef = ds.get_metrics_definition()
+        if metricsdef is not None:
+            all_metricsdef[ds.get_name()] = metricsdef
+
+    from GrimoireUtils import createJSON
+    createJSON(all_metricsdef, filename)
+
 def launch_vizjs_config():
     config = {}
     active_ds = []
@@ -929,26 +949,28 @@ def print_std(string, new_line=True):
 
 tasks_section = {
     'check-dbs':launch_checkdbs,
+    'copy-json': launch_copy_json,
     'cvsanaly':launch_cvsanaly,
     'bicho':launch_bicho,
-    'gerrit':launch_gerrit,
-    'mlstats':launch_mlstats,
-    'irc': launch_irc,
-    'mediawiki': launch_mediawiki,
-    'downloads': launch_downloads,
-    'qaforums': launch_sibyl,
-    'identities': launch_identity_scripts,
-    'metrics':launch_metrics_scripts,
-    'r':launch_metrics_scripts, # compatibility support
-    'copy-json': launch_copy_json,
-    'git-production':launch_commit_jsones,
     'db-dump':launch_database_dump,
+    'downloads': launch_downloads,
+    'gerrit':launch_gerrit,
+    'git-production':launch_commit_jsones,
+    'identities': launch_identity_scripts,
+    'irc': launch_irc,
     'json-dump':launch_json_dump,
+    'mediawiki': launch_mediawiki,
+    'metrics':launch_metrics_scripts,
+    'metricsdef':launch_metricsdef_config,
+    'mlstats':launch_mlstats,
+    'qaforums': launch_sibyl,
+    'r':launch_metrics_scripts, # compatibility support
     'rsync':launch_rsync,
     'vizjs':launch_vizjs_config
 }
 tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
-               'qaforums','identities','metrics','copy-json', 'vizjs','git-production','db-dump','json-dump','rsync']
+               'qaforums','identities','metrics','copy-json', 'vizjs','metricsdef',
+               'git-production','db-dump','json-dump','rsync']
 
 if __name__ == '__main__':
     opt = get_options()   

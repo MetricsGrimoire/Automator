@@ -323,7 +323,7 @@ def get_config_r(project_data):
             ["rscript","run-analysis.py"],
             ["start_date","2010-01-01"],
             ["end_date","2014-03-20"],
-            ["reports","repositories,companies,countries,people,domains"],
+            ["reports","repositories,companies,countries,people,domains,projects"],
             ["period","months"]
     ]
     return vars

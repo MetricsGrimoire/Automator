@@ -1,7 +1,7 @@
 Automator
 =========
 
-Automator is a Python script which executes the Metrics Grimoire tools and the VizGrimoireR scripts. It is a work in progress.
+Automator is a Python script which executes the Metrics Grimoire tools and the GrimoireLib report_tool.py tool. It is a work in progress.
 
 
     python launch.py --dir [ path to the directory where the main.conf file is ]

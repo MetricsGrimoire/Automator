@@ -65,10 +65,10 @@ def read_options():
                       action="store",
                       dest="dbpasswd", default="",
                       help="db user password")
-    parser.add_option("--remove-filter-url",
+    parser.add_option("--remove-filter-item",
                       action="store",
-                      dest="filter_item",
-                      help="Remove a filter item (i.e. repossitoy) from a data source.")
+                      dest="remove_filter_item",
+                      help="Remove a filter item (i.e. repository URL) from a data source.")
     parser.add_option("--list-filter-items",
                       action="store_true",
                       dest="list_filter_items",
@@ -89,7 +89,7 @@ def read_options():
     if opts.single_dash and not (opts.output_dir and opts.dbuser):
         parser.error("--web needs also --dir --dbuser")
 
-    if opts.filter_item and not (opts.data_source and opts.output_dir):
+    if opts.remove_filter_item and not (opts.data_source and opts.output_dir):
         parser.error("--remove-filter-url  needs also --data-source")
 
     if opts.list_filter_items and not (opts.data_source and opts.output_dir):
@@ -607,16 +607,19 @@ def read_main_conf(config_file):
             options[s][o] = parser.get(s, o)
     return options
 
-
-def get_filter_items(data_source, destdir):
+def import_grimoirelib(destdir):
     grimoirelib = os.path.join(destdir, "tools", "GrimoireLib","vizgrimoire")
-    logging.info("Loading GrimoireLib from " + grimoirelib)
     sys.path.append(grimoirelib)
     import report, GrimoireSQL
     automator_file = os.path.join(destdir,"conf/main.conf")
     report.Report.init(automator_file)
-    logging.info("Reading config from " + automator_file)
 
+
+def get_filter_items(data_source, destdir):
+    import_grimoirelib(destdir)
+    import report, GrimoireSQL
+
+    automator_file = os.path.join(destdir,"conf/main.conf")
     automator = read_main_conf(automator_file)
     db_user = automator['generic']['db_user']
     db_password = automator['generic']['db_password']
@@ -646,8 +649,36 @@ def get_filter_items(data_source, destdir):
         return
 
     res = GrimoireSQL.ExecuteQuery(q)[field]
-    for uri in res:
-        print(uri)
+    return res
+
+def remove_filter_item(item_uri, data_source, destdir):
+    import_grimoirelib(destdir)
+    import report, GrimoireSQL, filter
+
+    if item_uri not in get_filter_items(data_source, destdir):
+        logging.info('%s not found' % (item_uri))
+        return
+
+    automator_file = os.path.join(destdir,"conf/main.conf")
+    automator = read_main_conf(automator_file)
+    db_user = automator['generic']['db_user']
+    db_password = automator['generic']['db_password']
+    db_name_automator = None
+    ds = None
+
+    for dsaux in report.Report.get_data_sources():
+        if (dsaux.get_name() == data_source):
+            db_name_automator = dsaux.get_db_name()
+            ds = dsaux
+            break
+    if db_name_automator is None:
+        logging.error("Can't find the db_name in %s for the data source %s" % (automator_file, data_source))
+        sys.exit()
+    db_name = automator['generic'][db_name_automator]
+
+    GrimoireSQL.SetDBChannel (database=db_name, user=db_user, password=db_password)
+    logging.info('Removing %s from %s' % (item_uri, data_source))
+    ds.remove_filter_data(filter.Filter("repository", item_uri))
 
 def create_web(projects, destdir):
     """Create a web portal to access the projects dashboards"""
@@ -675,6 +706,9 @@ if __name__ == '__main__':
         projects = get_project_repos(opts.project_file)
         create_single_dash(projects, opts.output_dir)
     elif opts.list_filter_items:
-        get_filter_items(opts.data_source, opts.output_dir)
+        items = get_filter_items(opts.data_source, opts.output_dir)
+        for item in items: print(item)
+    elif opts.remove_filter_item:
+        remove_filter_item(opts.remove_filter_item, opts.data_source, opts.output_dir)
     else:
         create_projects(projects, opts.output_dir)

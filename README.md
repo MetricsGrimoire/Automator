@@ -1,7 +1,7 @@
 Automator
 =========
 
-Automator is a Python script which executes the Metrics Grimoire tools and the VizGrimoireR scripts. It is a work in progress.
+Automator is a Python script which executes the Metrics Grimoire tools and the GrimoireLib report_tool.py tool. It is a work in progress.
 
 
     python launch.py --dir [ path to the directory where the main.conf file is ]
@@ -10,7 +10,7 @@ Automator is a Python script which executes the Metrics Grimoire tools and the V
 Configuration file
 ------------------
 
-Automator was designed to run the Metrics Grimoire + VizGrimoireR tools automatically. The configuration file is very simple, 
+Automator was designed to run the Metrics Grimoire + GrimoireLib tools automatically. The configuration file is very simple, 
 if section exists it executes the tool, if not it doesn't.
 
     luis@tahine:~/repos/automator$ cat main.conf
@@ -28,7 +28,8 @@ if section exists it executes the tool, if not it doesn't.
     db_cvsanaly = cvsanaly_db
     db_mlstats = mlstats_db
     db_gerrit = gerrit_db
-    db_irc = gerrit_irc
+    db_irc = irc_db
+    db_mediawiki = mediawiki_db
     db_downloads = downloads_db
     
     [bicho]
@@ -62,6 +63,8 @@ if section exists it executes the tool, if not it doesn't.
     url = http://testing.url/logs/
  
     [irc]
+    
+    [mediawiki]
     
     [r]
     # This file contains information about the R script. The launcher
@@ -102,4 +105,4 @@ It is capable of executing the following tools (remember they are optional):
 + Bicho
 + MLStats
 + IRC Analysis
-+ VizGrimoireR scripts
++ GrimoireLib report_tool.py

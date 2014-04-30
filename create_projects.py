@@ -65,21 +65,35 @@ def read_options():
                       action="store",
                       dest="dbpasswd", default="",
                       help="db user password")
-
+    parser.add_option("--remove-filter-url",
+                      action="store",
+                      dest="filter_item",
+                      help="Remove a filter item (i.e. repossitoy) from a data source.")
+    parser.add_option("--list-filter-items",
+                      action="store_true",
+                      dest="list_filter_items",
+                      help="List all items from a filter from a data source.")
+    parser.add_option("--data-source",
+                      action="store",
+                      dest="data_source",
+                      help="Data source from which to remove a filter item.")
 
     (opts, args) = parser.parse_args()
 
     if len(args) != 0:
         parser.error("Wrong number of arguments")
 
-    if not(opts.project_file):
-        parser.error("--project is needed")
-
-    if opts.web and not opts.output_dir:
+    if opts.web and not (opts.output_dir and opts.project_file):
         parser.error("--web needs also --dir")
 
     if opts.single_dash and not (opts.output_dir and opts.dbuser):
         parser.error("--web needs also --dir --dbuser")
+
+    if opts.filter_item and not (opts.data_source and opts.output_dir):
+        parser.error("--remove-filter-url  needs also --data-source")
+
+    if opts.list_filter_items and not (opts.data_source and opts.output_dir):
+        parser.error("--list-filter-items  needs also --data-source and --dir")
 
     return opts
 
@@ -575,6 +589,66 @@ def create_single_dash(projects, destdir):
     # Create automator config
     create_project(single_project_name, single_project_data, destdir)
 
+def read_main_conf(config_file):
+    options = {}
+    parser = SafeConfigParser()
+    fd = open(config_file, 'r')
+    parser.readfp(fd)
+    fd.close()
+
+    sec = parser.sections()
+    # we'll read "generic" for db information and "r" for start_date and "bicho" for backend
+    for s in sec:
+        if not((s == "generic") or (s == "r") or (s == "bicho")):
+            continue
+        options[s] = {}
+        opti = parser.options(s)
+        for o in opti:
+            options[s][o] = parser.get(s, o)
+    return options
+
+
+def get_filter_items(data_source, destdir):
+    grimoirelib = os.path.join(destdir, "tools", "GrimoireLib","vizgrimoire")
+    logging.info("Loading GrimoireLib from " + grimoirelib)
+    sys.path.append(grimoirelib)
+    import report, GrimoireSQL
+    automator_file = os.path.join(destdir,"conf/main.conf")
+    report.Report.init(automator_file)
+    logging.info("Reading config from " + automator_file)
+
+    automator = read_main_conf(automator_file)
+    db_user = automator['generic']['db_user']
+    db_password = automator['generic']['db_password']
+    db_name_automator = None
+
+    for ds in report.Report.get_data_sources():
+        if (ds.get_name() == data_source):
+            db_name_automator = ds.get_db_name()
+            break
+    if db_name_automator is None:
+        logging.error("Can't find the db_name in %s for the data source %s" % (automator_file, data_source))
+        sys.exit()
+    db_name = automator['generic'][db_name_automator]
+
+    GrimoireSQL.SetDBChannel (database=db_name, user=db_user, password=db_password)
+    if (data_source == "scm"):
+        q = "SELECT * from repositories"
+        field = "uri"
+    elif (data_source == "its" or data_source == "scr"):
+        q = "SELECT * from trackers"
+        field = "url"
+    elif (data_source == "mls"):
+        q = "SELECT * from mailing_lists"
+        field = "mailing_list_url"
+    else:
+        logging.info("%s data source filter items lists not supported" % data_source)
+        return
+
+    res = GrimoireSQL.ExecuteQuery(q)[field]
+    for uri in res:
+        print(uri)
+
 def create_web(projects, destdir):
     """Create a web portal to access the projects dashboards"""
     browser_url = "tools/VizGrimoireJS/browser/"
@@ -593,11 +667,14 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s')
 
     opts = read_options()
-    projects = get_project_repos(opts.project_file)
 
     if opts.web:
+        projects = get_project_repos(opts.project_file)
         create_web(projects, opts.output_dir)
     elif opts.single_dash:
+        projects = get_project_repos(opts.project_file)
         create_single_dash(projects, opts.output_dir)
+    elif opts.list_filter_items:
+        get_filter_items(opts.data_source, opts.output_dir)
     else:
         create_projects(projects, opts.output_dir)

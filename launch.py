@@ -833,7 +833,10 @@ def write_json_config(data, filename):
     jsonfile.close()
 
 def launch_metricsdef_config():
-    filename = os.path.join(production_dir, "data", "metrics.json")
+    filedir = os.path.join(production_dir, "data")
+    if not os.path.isdir(filedir):
+        os.makedirs(filedir)
+    filename = os.path.join(filedir, "metrics.json")
     compose_msg("Writing metrics definition in: " + filename)
     # We need access to GrimoireLib
     grimoirelib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire")

@@ -292,7 +292,7 @@ def get_config_gerrit(project_data):
         ["user","acs"],
         ["debug","True"],
         ["delay","1"],
-        ["trackers","gerrit.wikimedia.org"],
+        ["trackers",project_data['gerrit_url'][0]],
         ["log_table","True"],
         ["projects",projects],
     ]
@@ -405,7 +405,8 @@ def create_project_config(name, project_data, output_dir):
             continue
         elif section[0] == "bicho" and not "trackers" in project_data:
             continue
-        elif section[0] == "gerrit" and not "gerrit_projects" in project_data:
+        elif section[0] == "gerrit" and \
+            (not "gerrit_projects" in project_data or not "gerrit_url" in project_data):
             continue
         elif section[0] == "mlstats" and not "mailing_lists" in project_data:
             continue
@@ -521,9 +522,12 @@ def fill_projects(db_name, projects):
             cursor.execute(q, (project_id, subproject_id))
     logging.info("Projects children added")
 
-    def insert_repos(project_id, repos, data_source):
+    def insert_repos(project_id, repos, data_source, base_url = None):
         for repo in repos:
             repo = repo.replace('"','')
+            if base_url:
+                base_url = base_url.replace('"','')
+                repo = base_url + "_" + repo
             q = "INSERT INTO project_repositories VALUES (%s, %s, %s)"
             cursor.execute(q, (project_id, data_source, repo))
 
@@ -542,7 +546,10 @@ def fill_projects(db_name, projects):
             if ds in projects[project]:
                 repos = projects[project][ds]
                 if ds in ds_to_ds.keys():
-                    insert_repos(projects_db[project], repos, ds_to_ds[ds])
+                    base_url = None
+                    if ds == "gerrit_projects":
+                        base_url = projects[project]['gerrit_url'][0]
+                    insert_repos(projects_db[project], repos, ds_to_ds[ds], base_url)
     db.close()
 
 
@@ -578,6 +585,9 @@ def create_single_dash(projects, destdir):
                 if ds not in single_project_data:
                     single_project_data[ds] = []
                 single_project_data[ds] += projects[project][ds]
+        # TODO: right now the same gerrit_url for all projects
+        if 'gerrit_url' in projects[project]:
+            single_project_data['gerrit_url'] = projects[project]['gerrit_url']
 
     # Create db for identities
     db_identities = get_db_prefix()+"_cvsanaly_"+single_project_name
@@ -711,4 +721,5 @@ if __name__ == '__main__':
     elif opts.remove_filter_item:
         remove_filter_item(opts.remove_filter_item, opts.data_source, opts.output_dir)
     else:
+        projects = get_project_repos(opts.project_file)
         create_projects(projects, opts.output_dir)

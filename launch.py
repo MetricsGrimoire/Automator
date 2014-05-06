@@ -220,7 +220,7 @@ def launch_checkdbs():
             print ("Can't connect to " + dbname)
             db = MySQLdb.connect(user = db_user, passwd = db_password)
             cursor = db.cursor()
-            query = "CREATE DATABASE " + dbname + " CHARACTER SET utf8 COLLATE utf8_unicode_ci"
+            query = "CREATE DATABASE " + dbname + " CHARACTER SET utf8"
             cursor.execute(query)
             db.close()
             print (dbname+" created")

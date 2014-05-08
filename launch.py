@@ -1005,7 +1005,7 @@ tasks_section = {
     'vizjs':launch_vizjs_config
 }
 tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
-               'qaforums','identities','metrics','copy-json', 'vizjs','metricsdef',
+               'sibyl','identities','metrics','copy-json', 'vizjs','metricsdef',
                'git-production','db-dump','json-dump','rsync']
 
 if __name__ == '__main__':

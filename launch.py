@@ -212,6 +212,8 @@ def launch_checkdbs():
         dbs.append(options['generic']['db_irc'])
     if options['generic'].has_key('db_mediawiki'):
         dbs.append(options['generic']['db_mediawiki'])
+    if options['generic'].has_key('db_releases'):
+        dbs.append(options['generic']['db_releases'])
     for dbname in dbs:
         try:
              db = MySQLdb.connect(user = db_user, passwd = db_password,  db = dbname)

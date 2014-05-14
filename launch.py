@@ -60,6 +60,7 @@ tools = {
     'mls': '/usr/local/bin/mlstats',
     'irc': '/usr/local/bin/irc_analysis.py',
     'mediawiki': '/usr/local/bin/mediawiki_analysis.py',
+    'sibyl': '/usr/local/bin/sibyl.py',
     'r': '/usr/bin/R',
     'git': '/usr/bin/git',
     'svn': '/usr/bin/svn',
@@ -542,8 +543,37 @@ def launch_downloads():
         compose_msg("[OK] downloads executed")
 
 def launch_sibyl():
-    # check if database with qaforums exists
-    pass
+    # check if sibyl option exists
+    if options.has_key('sibyl'):
+        if not check_tool(tools['sibyl']):
+            return
+
+        compose_msg("sibyl is being executed")
+        launched = False
+        db_user = options['generic']['db_user']
+        db_pass = options['generic']['db_password']
+        db_name = options['generic']['db_sibyl']
+        url = options['sibyl']['url']
+        backend = options['sibyl']['backend']
+        
+        # pre-scripts
+        launch_pre_tool_scripts('sibyl')
+
+        cmd = tools['sibyl'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --url=\"%s\" --type=\"%s\" >> %s 2>&1" \
+                      %(db_user, db_pass, db_name,  url, backend, msg_body)
+        compose_msg(cmd)
+        os.system(cmd)
+        # TODO: it's needed to check if the process correctly finished
+        launched = True
+
+        if launched:
+            compose_msg("[OK] sibyl executed")    
+        else:
+            compose_msg("[SKIPPED] sibyl not executed")
+    else:
+        compose_msg("[SKIPPED] sibyl was not executed, no conf available")
+
+    
 
 def launch_metrics_scripts():
     # Execute metrics tool using the automator config
@@ -554,7 +584,7 @@ def launch_metrics_scripts():
         compose_msg("metrics tool being launched")
 
         r_libs = '../../r-lib'
-        python_libs = '../vizgrimoire'
+        python_libs = '../vizgrimoire:../vizgrimoire/analysis:./'
         json_dir = '../../../json'
         conf_file = project_dir + '/conf/main.conf'
 
@@ -913,6 +943,9 @@ def get_project_info():
         "mediawiki_url":"",
         "mediawiki_name":"",
         "mediawiki_type":"",
+        "sibyl_url":"",
+        "sibyl_name":"",
+        "sibyl_type":"",
         "producer":"Automator",
         "blog_url":""
     }
@@ -968,13 +1001,13 @@ tasks_section = {
     'metrics':launch_metrics_scripts,
     'metricsdef':launch_metricsdef_config,
     'mlstats':launch_mlstats,
-    'qaforums': launch_sibyl,
+    'sibyl': launch_sibyl,
     'r':launch_metrics_scripts, # compatibility support
     'rsync':launch_rsync,
     'vizjs':launch_vizjs_config
 }
 tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
-               'qaforums','identities','metrics','copy-json', 'vizjs','metricsdef',
+               'sibyl','identities','metrics','copy-json', 'vizjs','metricsdef',
                'git-production','db-dump','json-dump','rsync']
 
 if __name__ == '__main__':

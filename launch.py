@@ -573,10 +573,10 @@ def launch_sibyl():
     else:
         compose_msg("[SKIPPED] sibyl was not executed, no conf available")
 
-    
 
 def launch_metrics_scripts():
     # Execute metrics tool using the automator config
+    # Start one report_tool per data source active
     if options.has_key('metrics') or options.has_key('r'):
         if not check_tool(tools['r']):
             return
@@ -584,8 +584,9 @@ def launch_metrics_scripts():
         compose_msg("metrics tool being launched")
 
         r_libs = '../../r-lib'
-        python_libs = '../vizgrimoire:../vizgrimoire/analysis:./'
+        python_libs = '../vizgrimoire:../vizgrimoire/analysis:../vizgrimoire/metrics:./'
         json_dir = '../../../json'
+        metrics_dir = '../vizgrimoire/metrics'
         conf_file = project_dir + '/conf/main.conf'
 
         metrics_tool = "report_tool.py"
@@ -601,7 +602,7 @@ def launch_metrics_scripts():
 
         os.chdir(path)
         logging.info(path)
-        cmd = "LANG= R_LIBS=%s PYTHONPATH=%s ./%s -c %s -o %s %s >> %s 2>&1" % (r_libs, python_libs, metrics_tool, conf_file, json_dir, metrics_section, msg_body)
+        cmd = "LANG= R_LIBS=%s PYTHONPATH=%s ./%s -c %s -m %s -o %s %s >> %s 2>&1" % (r_libs, python_libs, metrics_tool, conf_file, metrics_dir, json_dir, metrics_section, msg_body)
         logging.info(cmd)
         compose_msg(cmd)
         os.system(cmd)

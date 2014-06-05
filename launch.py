@@ -356,6 +356,11 @@ def launch_bicho():
     else:
         compose_msg("[SKIPPED] bicho not executed, no conf available")
 
+def launch_gather():
+    """ This tasks will execute in parallel all data gathering tasks """
+    logging.info("Executing all data gathering tasks in parallel")
+
+
 def launch_gerrit():
     # reads a conf file with all of the information and launches bicho
     if options.has_key('gerrit'):
@@ -555,7 +560,7 @@ def launch_sibyl():
         db_name = options['generic']['db_sibyl']
         url = options['sibyl']['url']
         backend = options['sibyl']['backend']
-        
+
         # pre-scripts
         launch_pre_tool_scripts('sibyl')
 
@@ -609,7 +614,7 @@ def exec_commands(cmds):
         else:
             time.sleep(0.5)
 
-def get_data_sources():
+def get_report_module():
     grimoirelib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire")
     metricslib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire","metrics")
     studieslib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire","analysis")
@@ -617,7 +622,7 @@ def get_data_sources():
         sys.path.append(dir)
     import report
     report.Report.init(os.path.join(conf_dir,"main.conf"))
-    return report.Report.get_data_sources()
+    return report.Report
 
 def launch_metrics_scripts():
     # Execute metrics tool using the automator config
@@ -649,6 +654,9 @@ def launch_metrics_scripts():
             metrics_section = "--filter " + params.filter
 
         commands = [] # One report_tool per data source
+        report = get_report_module()
+        dss = report.get_data_sources()
+
         dss = get_data_sources()
         for ds in dss:
             # if ds.get_name() not in ['scm','its']: continue
@@ -924,13 +932,8 @@ def launch_metricsdef_config():
         os.makedirs(filedir)
     filename = os.path.join(filedir, "metrics.json")
     compose_msg("Writing metrics definition in: " + filename)
-    # We need access to GrimoireLib
-    grimoirelib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire")
-    compose_msg("Loading GrimoireLib from " + grimoirelib)
-    sys.path.append(grimoirelib)
-    import report
-    report.Report.init(os.path.join(conf_dir,"main.conf"))
-    dss_active = report.Report.get_data_sources()
+    report = get_report_module()
+    dss_active = report.get_data_sources()
     all_metricsdef = {}
     for ds in dss_active:
         compose_msg("Metrics def for " + ds.get_name())
@@ -1039,27 +1042,33 @@ def print_std(string, new_line=True):
         else:
             print(string),
 
-tasks_section = {
-    'check-dbs':launch_checkdbs,
-    'copy-json': launch_copy_json,
+# All tasks related to data gathering
+tasks_section_gather = {
     'cvsanaly':launch_cvsanaly,
     'bicho':launch_bicho,
-    'db-dump':launch_database_dump,
     'downloads': launch_downloads,
     'gerrit':launch_gerrit,
+    'irc': launch_irc,
+    'mediawiki': launch_mediawiki,
+    'mlstats':launch_mlstats,
+    'sibyl': launch_sibyl
+}
+
+tasks_section = dict({
+    'check-dbs':launch_checkdbs,
+    'copy-json': launch_copy_json,
+    'db-dump':launch_database_dump,
+    'gather':launch_gather,
     'git-production':launch_commit_jsones,
     'identities': launch_identity_scripts,
-    'irc': launch_irc,
     'json-dump':launch_json_dump,
-    'mediawiki': launch_mediawiki,
     'metrics':launch_metrics_scripts,
     'metricsdef':launch_metricsdef_config,
-    'mlstats':launch_mlstats,
-    'sibyl': launch_sibyl,
     'r':launch_metrics_scripts, # compatibility support
     'rsync':launch_rsync,
     'vizjs':launch_vizjs_config
-}
+    }.items() + tasks_section_gather.items())
+
 tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
                'sibyl','identities','metrics','copy-json', 'vizjs','metricsdef',
                'git-production','db-dump','json-dump','rsync']

@@ -265,6 +265,8 @@ def launch_cvsanaly():
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
         if (db_pass == ""): db_pass = "''"
+        log_file = project_dir + '/log/launch_cvsanaly.log'
+
 
         # we launch cvsanaly against the repos
         repos = get_scm_repos()
@@ -277,10 +279,10 @@ def launch_cvsanaly():
             os.chdir(r)
             if options['cvsanaly'].has_key('extensions'):
                 cmd = tools['scm'] + " -u %s -p %s -d %s --extensions=%s >> %s 2>&1" \
-                        %(db_user, db_pass, db_name, options['cvsanaly']['extensions'], msg_body)
+                        %(db_user, db_pass, db_name, options['cvsanaly']['extensions'], log_file)
             else:
                 cmd = tools['scm'] + " -u %s -p %s -d %s >> %s 2>&1" \
-                        %(db_user, db_pass, db_name, msg_body)
+                        %(db_user, db_pass, db_name, log_file)
 
             compose_msg(cmd)
             os.system(cmd)
@@ -319,6 +321,8 @@ def launch_bicho():
         debug = options['bicho']['debug']
         if options['bicho'].has_key('log_table'):
             log_table = options['bicho']['log_table']
+        log_file = project_dir + '/log/launch_bicho.log'
+
 
         # we compose some flags
         flags = ""
@@ -343,7 +347,7 @@ def launch_bicho():
             if backend_user and backend_password:
                 user_opt = '--backend-user=%s --backend-password=%s' % (backend_user, backend_password)
             cmd = tools['its'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s %s -u %s %s >> %s 2>&1" \
-                        % (db_user, db_pass, database, str(delay), backend, user_opt, t, flags, msg_body)
+                        % (db_user, db_pass, database, str(delay), backend, user_opt, t, flags, log_file)
             compose_msg(cmd)
             os.system(cmd)
         if launched:
@@ -360,6 +364,22 @@ def launch_gather():
     """ This tasks will execute in parallel all data gathering tasks """
     logging.info("Executing all data gathering tasks in parallel")
 
+    from multiprocessing import Process, active_children
+
+    gather_tasks_order = ['cvsanaly','bicho','gerrit','mlstats',
+                          'irc','mediawiki', 'downloads', 'sibyl']
+    for section in gather_tasks_order:
+        logging.info("Executing %s ...." % (section))
+        p = Process(target=tasks_section_gather[section])
+        p.start()
+
+    # Wait until all processes finish
+    while True:
+        active = active_children()
+        if len(active) == 0:
+            break
+        else:
+            time.sleep(0.5)
 
 def launch_gerrit():
     # reads a conf file with all of the information and launches bicho
@@ -382,6 +402,8 @@ def launch_gerrit():
         log_table = None
         if options['gerrit'].has_key('log_table'):
             log_table = options['gerrit']['log_table']
+        log_file = project_dir + '/log/launch_gerrit.log'
+
 
         flags = ""
         if debug:
@@ -405,7 +427,7 @@ def launch_gerrit():
             if options['gerrit'].has_key('user'):
                 g_user = '--backend-user ' + options['gerrit']['user']
             cmd = tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s %s -u %s --gerrit-project=%s %s >> %s 2>&1" \
-                            % (db_user, db_pass, database, str(delay), backend, g_user, trackers[0], project, flags, msg_body)
+                            % (db_user, db_pass, database, str(delay), backend, g_user, trackers[0], project, flags, log_file)
             compose_msg(cmd)
             os.system(cmd)
 
@@ -439,6 +461,8 @@ def launch_mlstats():
         if options['mlstats'].has_key('force'):
             if options['mlstats']['force'] is True:
                 force = '--force'
+        log_file = project_dir + '/log/launch_mlstats.log'
+
 
         # pre-scripts
         launch_pre_tool_scripts('mlstats')
@@ -446,7 +470,7 @@ def launch_mlstats():
         for m in mlists.split(","):
             launched = True
             cmd = tools['mls'] + " %s --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"%s\" \"%s\" >> %s 2>&1" \
-                        %(force, db_user, db_pass, db_name, db_admin_user, db_pass, m, msg_body)
+                        %(force, db_user, db_pass, db_name, db_admin_user, db_pass, m, log_file)
             compose_msg(cmd)
             os.system(cmd)
         if launched:
@@ -475,6 +499,8 @@ def launch_irc():
             format = options['irc']['format']
         channels = os.listdir(irc_dir)
         os.chdir(irc_dir)
+        log_file = project_dir + '/log/launch_irc.log'
+
 
         # pre-scripts
         launch_pre_tool_scripts('irc')
@@ -483,7 +509,7 @@ def launch_irc():
             if not os.path.isdir(os.path.join(irc_dir,channel)): continue
             launched = True
             cmd = tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --dir=\"%s\" --channel=\"%s\" --format %s>> %s 2>&1" \
-                        % (db_user, db_pass, db_name, channel, channel, format, msg_body)
+                        % (db_user, db_pass, db_name, channel, channel, format, log_file)
             compose_msg(cmd)
             os.system(cmd)
         if launched:
@@ -508,6 +534,8 @@ def launch_mediawiki():
         db_pass = options['generic']['db_password']
         db_name = options['generic']['db_mediawiki']
         sites = options['mediawiki']['sites']
+        log_file = project_dir + '/log/launch_mediawiki.log'
+
 
         # pre-scripts
         launch_pre_tool_scripts('mediawiki')
@@ -516,7 +544,7 @@ def launch_mediawiki():
             launched = True
             # ./mediawiki_analysis.py --database acs_mediawiki_rdo_2478 --db-user root --url http://openstack.redhat.com
             cmd = tools['mediawiki'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --url=\"%s\" >> %s 2>&1" \
-                      %(db_user, db_pass, db_name,  sites, msg_body)
+                      %(db_user, db_pass, db_name,  sites, log_file)
             compose_msg(cmd)
             os.system(cmd)
         if launched:
@@ -539,10 +567,12 @@ def launch_downloads():
         db_name = options['generic']['db_downloads']
         db_user = options['generic']['db_user']
         db_password = options['generic']['db_password']
+        log_file = project_dir + '/log/launch_downloads.log'
+
  
         # sh script: $1 output dir, $2 url user, $3 url pass, $4 url, $5 db user, $6 db pass
-        cmd = "%s/downloads.sh %s %s %s %s %s %s" \
-              % (downloads_dir, downs_dir, url_user, url_pass, url, db_user, db_name)
+        cmd = "%s/downloads.sh %s %s %s %s %s %s >> %s 2>&1"\
+              % (downloads_dir, downs_dir, url_user, url_pass, url, db_user, db_name, log_file)
         compose_msg(cmd)
         os.system(cmd)
         compose_msg("[OK] downloads executed")
@@ -560,12 +590,13 @@ def launch_sibyl():
         db_name = options['generic']['db_sibyl']
         url = options['sibyl']['url']
         backend = options['sibyl']['backend']
+        log_file = project_dir + '/log/launch_sibyl.log'
 
         # pre-scripts
         launch_pre_tool_scripts('sibyl')
 
         cmd = tools['sibyl'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --url=\"%s\" --type=\"%s\" >> %s 2>&1" \
-                      %(db_user, db_pass, db_name,  url, backend, msg_body)
+                      %(db_user, db_pass, db_name,  url, backend, log_file)
         compose_msg(cmd)
         os.system(cmd)
         # TODO: it's needed to check if the process correctly finished
@@ -656,8 +687,6 @@ def launch_metrics_scripts():
         commands = [] # One report_tool per data source
         report = get_report_module()
         dss = report.get_data_sources()
-
-        dss = get_data_sources()
         for ds in dss:
             # if ds.get_name() not in ['scm','its']: continue
             log_file_ds = log_file + ds.get_name()+".log"
@@ -1069,9 +1098,17 @@ tasks_section = dict({
     'vizjs':launch_vizjs_config
     }.items() + tasks_section_gather.items())
 
-tasks_order = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
-               'sibyl','identities','metrics','copy-json', 'vizjs','metricsdef',
-               'git-production','db-dump','json-dump','rsync']
+# Use this for serial execution of data gathering
+tasks_order_serial = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
+                      'sibyl','identities','metrics','copy-json', 'vizjs','metricsdef',
+                      'git-production','db-dump','json-dump','rsync']
+
+# Use this for parallel execution of data gathering
+tasks_order_parallel = ['check-dbs','gather','identities','metrics','copy-json', 'vizjs','metricsdef',
+                        'git-production','db-dump','json-dump','rsync']
+
+tasks_order = tasks_order_parallel
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s')

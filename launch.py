@@ -972,11 +972,14 @@ def launch_metricsdef_config():
     filename = os.path.join(filedir, "metrics.json")
     compose_msg("Writing metrics definition in: " + filename)
     report = get_report_module()
+    automator_file = project_dir + '/conf/main.conf'
+    metrics_dir = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire","metrics")
+    report.init(automator_file, metrics_dir)
     dss_active = report.get_data_sources()
     all_metricsdef = {}
     for ds in dss_active:
         compose_msg("Metrics def for " + ds.get_name())
-        metricsdef = ds.get_metrics_definition()
+        metricsdef = ds.get_metrics_definition(ds)
         if metricsdef is not None:
             all_metricsdef[ds.get_name()] = metricsdef
 

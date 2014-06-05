@@ -721,65 +721,74 @@ def launch_identity_scripts():
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
         if (db_pass == ""): db_pass="''"
+        log_file = project_dir + '/log/identities.log'
 
         if options['generic'].has_key('db_cvsanaly'):
             # TODO: -i no is needed in first execution
             db_scm = options['generic']['db_cvsanaly']
-            cmd = "%s/unifypeople.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_scm, msg_body)
-            compose_msg(cmd)
+            cmd = "%s/unifypeople.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_scm, log_file)
+            compose_msg(cmd, log_file)
             os.system(cmd)
             # Companies are needed in Top because bots are included in a company
-            cmd = "%s/domains_analysis.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_scm, msg_body)
-            compose_msg(cmd)
+            cmd = "%s/domains_analysis.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_scm, log_file)
+            compose_msg(cmd, log_file)
             os.system(cmd)
 
         if options['generic'].has_key('db_bicho'):
             db_its = options['generic']['db_bicho']
             cmd = get_ds_identities_cmd(db_its, 'its')
-            compose_msg(cmd)
+            compose_msg(cmd, log_file)
             os.system(cmd)
 
         # Gerrit use the same schema than its: both use bicho tool              
         if options['generic'].has_key('db_gerrit'):
             db_gerrit = options['generic']['db_gerrit']
             cmd = get_ds_identities_cmd(db_gerrit, 'scr')
-            compose_msg(cmd)
+            compose_msg(cmd, log_file)
             os.system(cmd)
 
         if options['generic'].has_key('db_mlstats'):
             db_mls = options['generic']['db_mlstats']
             cmd = get_ds_identities_cmd(db_mls, 'mls')
-            compose_msg(cmd)
+            compose_msg(cmd, log_file)
             os.system(cmd)
 
         if options['generic'].has_key('db_irc'):
             db_irc = options['generic']['db_irc']
             cmd = get_ds_identities_cmd(db_irc, 'irc')
-            compose_msg(cmd)
+            compose_msg(cmd, log_file)
             os.system(cmd)
         if options['generic'].has_key('db_mediawiki'):
             db_mediawiki = options['generic']['db_mediawiki']
             cmd = get_ds_identities_cmd(db_mediawiki, 'mediawiki')
-            compose_msg(cmd)
+            compose_msg(cmd, log_file)
+            os.system(cmd)
+        if options['generic'].has_key('db_releases'):
+            db = options['generic']['db_releases']
+            cmd = get_ds_identities_cmd(db, 'releases')
+            compose_msg(cmd, log_file)
             os.system(cmd)
         if options['identities'].has_key('countries'):
             cmd = "%s/load_ids_mapping.py -m countries -t true -u %s -p %s --database %s >> %s 2>&1" \
                         % (idir, db_user, db_pass, db_scm, msg_body)
-            compose_msg(cmd)
+            compose_msg(cmd, log_file)
             os.system(cmd)
         if options['identities'].has_key('companies'):
             cmd = "%s/load_ids_mapping.py -m companies -t true -u %s -p %s --database %s >> %s 2>&1" \
                         % (idir, db_user, db_pass, db_scm, msg_body)
-            compose_msg(cmd)
+            compose_msg(cmd, log_file)
             os.system(cmd)
 
         compose_msg("[OK] Identity scripts executed")
     else:
         compose_msg("[SKIPPED] Unify identity scripts not executed, no conf available")
 
-def compose_msg(text):
+def compose_msg(text, log_file = None):
     # append text to log file
-    fd = open(msg_body, 'a')
+    if log_file is None:
+        fd = open(msg_body, 'a')
+    else:
+        fd = open(log_file, 'a')
     time_tag = '[' + time.strftime('%H:%M:%S') + ']'
     fd.write(time_tag + ' ' + text)
     fd.write('\n')

@@ -574,11 +574,54 @@ def launch_sibyl():
         compose_msg("[SKIPPED] sibyl was not executed, no conf available")
 
 
+# http://code.activestate.com/recipes/577376-simple-way-to-execute-multiple-process-in-parallel/
+def exec_commands(cmds):
+    ''' Exec commands in parallel in multiple process '''
+
+    if not cmds: return # empty list
+
+    def done(p):
+        return p.poll() is not None
+    def success(p):
+        return p.returncode == 0
+    def fail():
+        logging.error("Problems in report_tool.py execution. See logs.")
+        sys.exit(1)
+
+    # max_task = cpu_count()
+    max_tasks = 2
+    processes = []
+    while True:
+        while cmds and len(processes) < max_tasks:
+            task = cmds.pop()
+            # print subprocess.list2cmdline(task)
+            processes.append(subprocess.Popen(task, shell = True))
+
+        for p in processes:
+            if done(p):
+                if success(p):
+                    processes.remove(p)
+                else:
+                    fail()
+
+        if not processes and not cmds:
+            break
+        else:
+            time.sleep(0.5)
+
+def get_data_sources():
+    grimoirelib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire")
+    metricslib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire","metrics")
+    studieslib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire","analysis")
+    for dir in [grimoirelib,metricslib,studieslib]:
+        sys.path.append(dir)
+    import report
+    report.Report.init(os.path.join(conf_dir,"main.conf"))
+    return report.Report.get_data_sources()
+
 def launch_metrics_scripts():
     # Execute metrics tool using the automator config
     # Start one report_tool per data source active
-
-    from subprocess import Popen
 
     if options.has_key('metrics') or options.has_key('r'):
         if not check_tool(tools['r']):
@@ -591,6 +634,8 @@ def launch_metrics_scripts():
         json_dir = '../../../json'
         metrics_dir = '../vizgrimoire/metrics'
         conf_file = project_dir + '/conf/main.conf'
+        log_file = project_dir + '/log/launch-'
+
 
         metrics_tool = "report_tool.py"
         path = r_dir
@@ -603,47 +648,17 @@ def launch_metrics_scripts():
         if params.filter:
             metrics_section = "--filter " + params.filter
 
-        grimoirelib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire")
-        metricslib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire","metrics")
-        studieslib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire","analysis")
-        for dir in [grimoirelib,metricslib,studieslib]:
-            sys.path.append(dir)
-        import report
-        report.Report.init(os.path.join(conf_dir,"main.conf"))
-        dss_active = report.Report.get_data_sources()
-        processes = []
-        for ds in dss_active:
+        commands = [] # One report_tool per data source
+        dss = get_data_sources()
+        for ds in dss:
             # if ds.get_name() not in ['scm','its']: continue
+            log_file_ds = log_file + ds.get_name()+".log"
             os.chdir(path)
             cmd = "LANG= R_LIBS=%s PYTHONPATH=%s ./%s -c %s -m %s -o %s --data-source %s %s >> %s 2>&1" \
-                % (r_libs, python_libs, metrics_tool, conf_file, metrics_dir, json_dir, ds.get_name(), metrics_section, msg_body)
-            cmd = [cmd]
-            logging.info(cmd)
-            processes.append(subprocess.Popen(cmd, shell = True))
+                % (r_libs, python_libs, metrics_tool, conf_file, metrics_dir, json_dir, ds.get_name(), metrics_section, log_file_ds)
+            commands.append([cmd])
 
-        def done(p):
-            return p.poll() is not None
-        def success(p):
-            return p.returncode == 0
-        def fail():
-            logging.error("Problem executing report_tool")
-            sys.exit(1)
-
-        # Wait for all processes to end
-        while True:
-            for p in processes:
-                if done(p):
-                    print(p.returncode)
-                    if success(p):
-                        logging.info("OK")
-                        print(processes)
-                        processes.remove(p)
-                    else:
-                        fail()
-            if not processes:
-                break
-            else:
-                time.sleep(0.5)
+        exec_commands (commands)
 
         compose_msg("[OK] metrics tool executed")
     else:

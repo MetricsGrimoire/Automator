@@ -172,15 +172,16 @@ def update_scm(dir = scm_dir):
     compose_msg("SCM is being updated")
     repos = get_scm_repos()
     updated = False
+    log_file = project_dir + '/log/launch_cvsanaly.log'
 
     for r in repos:
         os.chdir(r)
         if os.path.isdir(os.path.join(dir,r,".git")):
-            os.system("git pull >> %s 2>&1" %(msg_body))
+            os.system("git pull >> %s 2>&1" %(log_file))
         elif os.path.isdir(os.path.join(dir,r,".svn")):
-            os.system("svn update >> %s 2>&1" %(msg_body))
-        else: compose_msg(r + " not git nor svn.")
-        compose_msg(r + " update ended")
+            os.system("svn update >> %s 2>&1" %(log_file))
+        else: compose_msg(r + " not git nor svn.", log_file)
+        compose_msg(r + " update ended", log_file)
 
     if updated: compose_msg("[OK] SCM updated")
 
@@ -284,7 +285,7 @@ def launch_cvsanaly():
                 cmd = tools['scm'] + " -u %s -p %s -d %s >> %s 2>&1" \
                         %(db_user, db_pass, db_name, log_file)
 
-            compose_msg(cmd)
+            compose_msg(cmd, log_file)
             os.system(cmd)
 
         if launched:
@@ -348,7 +349,7 @@ def launch_bicho():
                 user_opt = '--backend-user=%s --backend-password=%s' % (backend_user, backend_password)
             cmd = tools['its'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s %s -u %s %s >> %s 2>&1" \
                         % (db_user, db_pass, database, str(delay), backend, user_opt, t, flags, log_file)
-            compose_msg(cmd)
+            compose_msg(cmd, log_file)
             os.system(cmd)
         if launched:
             compose_msg("[OK] bicho executed")
@@ -428,7 +429,7 @@ def launch_gerrit():
                 g_user = '--backend-user ' + options['gerrit']['user']
             cmd = tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s %s -u %s --gerrit-project=%s %s >> %s 2>&1" \
                             % (db_user, db_pass, database, str(delay), backend, g_user, trackers[0], project, flags, log_file)
-            compose_msg(cmd)
+            compose_msg(cmd, log_file)
             os.system(cmd)
 
 
@@ -471,7 +472,7 @@ def launch_mlstats():
             launched = True
             cmd = tools['mls'] + " %s --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"%s\" \"%s\" >> %s 2>&1" \
                         %(force, db_user, db_pass, db_name, db_admin_user, db_pass, m, log_file)
-            compose_msg(cmd)
+            compose_msg(cmd, log_file)
             os.system(cmd)
         if launched:
             compose_msg("[OK] mlstats executed")
@@ -510,7 +511,7 @@ def launch_irc():
             launched = True
             cmd = tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --dir=\"%s\" --channel=\"%s\" --format %s>> %s 2>&1" \
                         % (db_user, db_pass, db_name, channel, channel, format, log_file)
-            compose_msg(cmd)
+            compose_msg(cmd, log_file)
             os.system(cmd)
         if launched:
             compose_msg("[OK] irc_analysis executed")
@@ -545,7 +546,7 @@ def launch_mediawiki():
             # ./mediawiki_analysis.py --database acs_mediawiki_rdo_2478 --db-user root --url http://openstack.redhat.com
             cmd = tools['mediawiki'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --url=\"%s\" >> %s 2>&1" \
                       %(db_user, db_pass, db_name,  sites, log_file)
-            compose_msg(cmd)
+            compose_msg(cmd, log_file)
             os.system(cmd)
         if launched:
             compose_msg("[OK] mediawiki_analysis executed")
@@ -573,7 +574,7 @@ def launch_downloads():
         # sh script: $1 output dir, $2 url user, $3 url pass, $4 url, $5 db user, $6 db pass
         cmd = "%s/downloads.sh %s %s %s %s %s %s >> %s 2>&1"\
               % (downloads_dir, downs_dir, url_user, url_pass, url, db_user, db_name, log_file)
-        compose_msg(cmd)
+        compose_msg(cmd, log_file)
         os.system(cmd)
         compose_msg("[OK] downloads executed")
 
@@ -597,7 +598,7 @@ def launch_sibyl():
 
         cmd = tools['sibyl'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --url=\"%s\" --type=\"%s\" >> %s 2>&1" \
                       %(db_user, db_pass, db_name,  url, backend, log_file)
-        compose_msg(cmd)
+        compose_msg(cmd, log_file)
         os.system(cmd)
         # TODO: it's needed to check if the process correctly finished
         launched = True

@@ -987,20 +987,14 @@ def launch_metricsdef_config():
     createJSON(all_metricsdef, filename)
 
 def launch_vizjs_config():
+    report = get_report_module()
     config = {}
     active_ds = []
-    # All data source with database configured are active
-    dbs_to_ds = {
-           'db_cvsanaly': 'scm',
-           'db_bicho': 'its',
-           'db_gerrit':'gerrit',
-           'db_mlstats':'mlstats',
-           'db_irc':'irc',
-           'db_mediawiki':'mediawiki'
-    }
-    for db in dbs_to_ds:
-        if options['generic'].has_key(db):
-            active_ds.append(dbs_to_ds[db])
+
+    dss = report.get_data_sources()
+    for ds in dss:
+        active_ds.append(ds.get_name())
+
     if options['generic'].has_key('markers'):
         config['markers'] = options['generic']['markers'];
 

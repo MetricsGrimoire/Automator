@@ -871,6 +871,7 @@ def launch_database_dump():
         # databases
         # this may fail if any of the four is not found
         db_user = options['generic']['db_user']
+        db_pass = options['generic']['db_password']
 
         if options['generic'].has_key('db_bicho'):
             dbs.append([options['generic']['db_bicho'], 'tickets']);
@@ -896,7 +897,7 @@ def launch_database_dump():
 
             fd_dump = open(dest_mysql_file, 'w')
             # Creation of dump file
-            pr = subprocess.Popen([tools['mysqldump'], '-u', db_user, db[0]],
+            pr = subprocess.Popen([tools['mysqldump'], '-u', db_user, '--password='+ db_pass, db[0]],
                      stdout = fd_dump,
                      stderr = fd,
                      shell = False)

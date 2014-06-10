@@ -61,6 +61,7 @@ tools = {
     'irc': '/usr/local/bin/irc_analysis.py',
     'mediawiki': '/usr/local/bin/mediawiki_analysis.py',
     'sibyl': '/usr/local/bin/sibyl.py',
+    'octopus': '/usr/local/bin/octopus',
     'r': '/usr/bin/R',
     'git': '/usr/bin/git',
     'svn': '/usr/bin/svn',
@@ -368,7 +369,7 @@ def launch_gather():
     from multiprocessing import Process, active_children
 
     gather_tasks_order = ['cvsanaly','bicho','gerrit','mlstats',
-                          'irc','mediawiki', 'downloads', 'sibyl']
+                          'irc','mediawiki', 'downloads', 'sibyl','octopus']
     for section in gather_tasks_order:
         logging.info("Executing %s ...." % (section))
         p = Process(target=tasks_section_gather[section])
@@ -609,6 +610,38 @@ def launch_sibyl():
             compose_msg("[SKIPPED] sibyl not executed")
     else:
         compose_msg("[SKIPPED] sibyl was not executed, no conf available")
+
+def launch_octopus():
+    # check if octopusl option exists
+    if options.has_key('octopus'):
+        if not check_tool(tools['octopus']):
+            return
+
+        compose_msg("octopus is being executed")
+        launched = False
+        db_user = options['generic']['db_user']
+        db_pass = options['generic']['db_password']
+        db_name = options['generic']['db_releases']
+        url = options['octopus']['url']
+        backend = options['octopus']['backend']
+        log_file = project_dir + '/log/launch_octopus.log'
+
+        # pre-scripts
+        launch_pre_tool_scripts('octopus')
+
+        cmd = tools['octopus'] + " -u \"%s\" -p \"%s\" -d \"%s\" --backend=\"%s\" \"%s\">> %s 2>&1" \
+                      %(db_user, db_pass, db_name,  backend, url, log_file)
+        compose_msg(cmd, log_file)
+        os.system(cmd)
+        # TODO: it's needed to check if the process correctly finished
+        launched = True
+
+        if launched:
+            compose_msg("[OK] octopus executed")
+        else:
+            compose_msg("[SKIPPED] octopus not executed")
+    else:
+        compose_msg("[SKIPPED] octopus was not executed, no conf available")
 
 
 # http://code.activestate.com/recipes/577376-simple-way-to-execute-multiple-process-in-parallel/
@@ -1088,7 +1121,8 @@ tasks_section_gather = {
     'irc': launch_irc,
     'mediawiki': launch_mediawiki,
     'mlstats':launch_mlstats,
-    'sibyl': launch_sibyl
+    'sibyl': launch_sibyl,
+    'octopus': launch_octopus
 }
 
 tasks_section = dict({
@@ -1108,7 +1142,7 @@ tasks_section = dict({
 
 # Use this for serial execution of data gathering
 tasks_order_serial = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
-                      'sibyl','identities','metrics','copy-json', 'vizjs','metricsdef',
+                      'sibyl','octopus','identities','metrics','copy-json', 'vizjs','metricsdef',
                       'git-production','db-dump','json-dump','rsync']
 
 # Use this for parallel execution of data gathering

@@ -217,6 +217,8 @@ def launch_checkdbs():
         dbs.append(options['generic']['db_mediawiki'])
     if options['generic'].has_key('db_releases'):
         dbs.append(options['generic']['db_releases'])
+    if options['generic'].has_key('db_qaforums'):
+        dbs.append(options['generic']['db_qaforums'])
     for dbname in dbs:
         try:
              db = MySQLdb.connect(user = db_user, passwd = db_password,  db = dbname)
@@ -589,7 +591,7 @@ def launch_sibyl():
         launched = False
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
-        db_name = options['generic']['db_sibyl']
+        db_name = options['generic']['db_qaforums']
         url = options['sibyl']['url']
         backend = options['sibyl']['backend']
         log_file = project_dir + '/log/launch_sibyl.log'

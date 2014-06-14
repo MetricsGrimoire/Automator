@@ -702,7 +702,7 @@ def launch_metrics_scripts():
         compose_msg("metrics tool being launched")
 
         r_libs = '../../r-lib'
-        python_libs = '../vizgrimoire:../vizgrimoire/analysis:../vizgrimoire/metrics:./'
+        python_libs = '../grimoirelib_alch:../vizgrimoire:../vizgrimoire/analysis:../vizgrimoire/metrics:./'
         json_dir = '../../../json'
         metrics_dir = '../vizgrimoire/metrics'
         conf_file = project_dir + '/conf/main.conf'

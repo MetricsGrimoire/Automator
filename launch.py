@@ -1142,13 +1142,16 @@ tasks_section = dict({
     'vizjs':launch_vizjs_config
     }.items() + tasks_section_gather.items())
 
+
+# vizjs: config.json deactivate until more testing in VizJS-lib
+
 # Use this for serial execution of data gathering
 tasks_order_serial = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
-                      'sibyl','octopus','identities','metrics','copy-json', 'vizjs','metricsdef',
+                      'sibyl','octopus','identities','metrics','copy-json', 'metricsdef',
                       'git-production','db-dump','json-dump','rsync']
 
 # Use this for parallel execution of data gathering
-tasks_order_parallel = ['check-dbs','gather','identities','metrics','copy-json', 'vizjs','metricsdef',
+tasks_order_parallel = ['check-dbs','gather','identities','metrics','copy-json', 'metricsdef',
                         'git-production','db-dump','json-dump','rsync']
 
 tasks_order = tasks_order_parallel

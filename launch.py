@@ -685,6 +685,7 @@ def get_report_module():
     grimoirelib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire")
     metricslib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire","metrics")
     studieslib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire","analysis")
+    alchemy = os.path.join(project_dir, "tools", "GrimoireLib","grimoirelib_alch","analysis")
     for dir in [grimoirelib,metricslib,studieslib]:
         sys.path.append(dir)
     import report

@@ -339,6 +339,8 @@ def get_config_r(project_data):
             ["# end_date","2014-03-20"],
             ["reports","repositories,companies,countries,people,domains,projects"],
             ["# people_out = 'bot1', 'bot2'"],
+            ["# companies_out = 'company1', 'bot2'"],
+            ["# domains_out = 'company1', 'bot2'"],
             ["period","months"]
     ]
     return vars

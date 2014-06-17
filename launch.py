@@ -805,6 +805,11 @@ def launch_identity_scripts():
             cmd = get_ds_identities_cmd(db, 'releases')
             compose_msg(cmd, log_file)
             os.system(cmd)
+        if options['generic'].has_key('db_qaforums'):
+            db = options['generic']['db_qaforums']
+            cmd = get_ds_identities_cmd(db, 'qaforums')
+            compose_msg(cmd, log_file)
+            os.system(cmd)
         if options['identities'].has_key('countries'):
             cmd = "%s/load_ids_mapping.py -m countries -t true -u %s -p %s --database %s >> %s 2>&1" \
                         % (idir, db_user, db_pass, db_scm, msg_body)

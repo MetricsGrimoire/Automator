@@ -747,14 +747,17 @@ def get_ds_identities_cmd(db, type):
     if (db_pass == ""): db_pass="''"
     db_scm = options['generic']['db_cvsanaly']
     db_ids = db_scm
+    log_file = project_dir + '/log/identities.log'
+
     cmd = "%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1" \
-            % (idir, db_user, db_pass, db, db_ids, type, msg_body)
+            % (idir, db_user, db_pass, db, db_ids, type, log_file)
+
     return cmd
 
 def launch_identity_scripts():
     # using the conf executes cvsanaly for the repos inside scm dir
     if options.has_key('identities'):
-        compose_msg("Unify identity scripts are being executed")
+        logging.info("Unique identities scripts are being executed")
         # idir = options['identities']['iscripts_path']
         idir = identities_dir
         db_user = options['generic']['db_user']
@@ -762,6 +765,7 @@ def launch_identity_scripts():
         if (db_pass == ""): db_pass="''"
         log_file = project_dir + '/log/identities.log'
 
+        # SCM is specific in generating identities. It includes identities tables.
         if options['generic'].has_key('db_cvsanaly'):
             # TODO: -i no is needed in first execution
             db_scm = options['generic']['db_cvsanaly']
@@ -773,54 +777,34 @@ def launch_identity_scripts():
             compose_msg(cmd, log_file)
             os.system(cmd)
 
-        if options['generic'].has_key('db_bicho'):
-            db_its = options['generic']['db_bicho']
-            cmd = get_ds_identities_cmd(db_its, 'its')
+        # Generate unique identities for all data sources active
+        report = get_report_module()
+        dss = report.get_data_sources()
+        for ds in dss:
+            if ds.get_db_name() in options['generic']:
+                db_ds = options['generic'][ds.get_db_name()]
+            else:
+                logging.error(ds.get_db_name() + " not in automator main.conf")
+                continue
+            cmd = get_ds_identities_cmd(db_ds, ds.get_name())
             compose_msg(cmd, log_file)
             os.system(cmd)
 
-        # Gerrit use the same schema than its: both use bicho tool              
-        if options['generic'].has_key('db_gerrit'):
-            db_gerrit = options['generic']['db_gerrit']
-            cmd = get_ds_identities_cmd(db_gerrit, 'scr')
-            compose_msg(cmd, log_file)
-            os.system(cmd)
-
-        if options['generic'].has_key('db_mlstats'):
-            db_mls = options['generic']['db_mlstats']
-            cmd = get_ds_identities_cmd(db_mls, 'mls')
-            compose_msg(cmd, log_file)
-            os.system(cmd)
-
-        if options['generic'].has_key('db_irc'):
-            db_irc = options['generic']['db_irc']
-            cmd = get_ds_identities_cmd(db_irc, 'irc')
-            compose_msg(cmd, log_file)
-            os.system(cmd)
-        if options['generic'].has_key('db_mediawiki'):
-            db_mediawiki = options['generic']['db_mediawiki']
-            cmd = get_ds_identities_cmd(db_mediawiki, 'mediawiki')
-            compose_msg(cmd, log_file)
-            os.system(cmd)
-        if options['generic'].has_key('db_releases'):
-            db = options['generic']['db_releases']
-            cmd = get_ds_identities_cmd(db, 'releases')
-            compose_msg(cmd, log_file)
-            os.system(cmd)
         if options['identities'].has_key('countries'):
             cmd = "%s/load_ids_mapping.py -m countries -t true -u %s -p %s --database %s >> %s 2>&1" \
-                        % (idir, db_user, db_pass, db_scm, msg_body)
-            compose_msg(cmd, log_file)
-            os.system(cmd)
-        if options['identities'].has_key('companies'):
-            cmd = "%s/load_ids_mapping.py -m companies -t true -u %s -p %s --database %s >> %s 2>&1" \
-                        % (idir, db_user, db_pass, db_scm, msg_body)
+                        % (idir, db_user, db_pass, db_scm, log_file)
             compose_msg(cmd, log_file)
             os.system(cmd)
 
-        compose_msg("[OK] Identity scripts executed")
+        if options['identities'].has_key('companies'):
+            cmd = "%s/load_ids_mapping.py -m companies -t true -u %s -p %s --database %s >> %s 2>&1" \
+                        % (idir, db_user, db_pass, db_scm, log_file)
+            compose_msg(cmd, log_file)
+            os.system(cmd)
+
+        logging.info("[OK] Identity scripts executed")
     else:
-        compose_msg("[SKIPPED] Unify identity scripts not executed, no conf available")
+        logging.info("[SKIPPED] Unify identity scripts not executed, no conf available")
 
 def compose_msg(text, log_file = None):
     # append text to log file

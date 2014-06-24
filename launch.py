@@ -586,6 +586,8 @@ def launch_sibyl():
     if options.has_key('sibyl'):
         if not check_tool(tools['sibyl']):
             return
+        if not options['sibyl'].has_key('url'):
+            return
 
         compose_msg("sibyl is being executed")
         launched = False

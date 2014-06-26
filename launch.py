@@ -588,6 +588,8 @@ def launch_sibyl():
     if options.has_key('sibyl'):
         if not check_tool(tools['sibyl']):
             return
+        if not options['sibyl'].has_key('url'):
+            return
 
         compose_msg("sibyl is being executed")
         launched = False
@@ -687,8 +689,8 @@ def get_report_module():
     grimoirelib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire")
     metricslib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire","metrics")
     studieslib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire","analysis")
-    alchemy = os.path.join(project_dir, "tools", "GrimoireLib","grimoirelib_alch","analysis")
-    for dir in [grimoirelib,metricslib,studieslib]:
+    alchemy = os.path.join(project_dir, "tools", "GrimoireLib","grimoirelib_alch")
+    for dir in [grimoirelib,metricslib,studieslib,alchemy]:
         sys.path.append(dir)
     import report
     report.Report.init(os.path.join(conf_dir,"main.conf"))

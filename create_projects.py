@@ -338,9 +338,9 @@ def get_config_r(project_data):
             ["start_date","2010-01-01"],
             ["# end_date","2014-03-20"],
             ["reports","repositories,companies,countries,people,domains,projects"],
-            ["# people_out = 'bot1', 'bot2'"],
-            ["# companies_out = 'company1', 'bot2'"],
-            ["# domains_out = 'company1', 'bot2'"],
+            ["# people_out", "'bot1', 'bot2'"],
+            ["# companies_out", "'company1', 'bot2'"],
+            ["# domains_out", "'company1', 'bot2'"],
             ["period","months"]
     ]
     return vars
@@ -431,7 +431,8 @@ def create_project(name, data, destdir):
     logging.info("Creating automator project %s under %s " % (name, destdir))
     create_project_dirs(name, destdir)
     project_dir = os.path.join(destdir, name)
-    download_gits(data['source'], project_dir)
+    if 'source' in data:
+        download_gits(data['source'], project_dir)
     create_project_config(name, data, destdir)
     download_tools(name, destdir)
     if 'irc_channels' in data:

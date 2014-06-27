@@ -720,14 +720,21 @@ def launch_metrics_scripts():
         params = get_options()
 
         metrics_section = ''
-        if params.subtask:
-            metrics_section = "--data-source " + params.subtask
         if params.filter:
             metrics_section = "--filter " + params.filter
 
         commands = [] # One report_tool per data source
         report = get_report_module()
         dss = report.get_data_sources()
+
+        if params.subtask:
+            report = get_report_module()
+            ds = report.get_data_source(params.subtask)
+            if ds is None:
+                logging.error("Data source " + params.subtask + " not found")
+                return
+            dss = [ds]
+
         for ds in dss:
             # if ds.get_name() not in ['scm','its']: continue
             log_file_ds = log_file + ds.get_name()+".log"

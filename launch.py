@@ -121,10 +121,9 @@ def initialize_globals(pdir):
     json_dir = project_dir + '/json/'
     scripts_dir = project_dir + '/scripts/'
     production_dir = project_dir + '/production/'
-    # identities_dir = project_dir + '/tools/VizGrimoireR/misc/'
     identities_dir = project_dir + '/tools/VizGrimoireUtils/identities/'
     downloads_dir = project_dir + '/tools/VizGrimoireUtils/downloads/'
-    r_dir = project_dir + '/tools/VizGrimoireR/vizGrimoireJS/'
+    r_dir = project_dir + '/tools/GrimoireLib/vizGrimoireJS/'
 
 def read_main_conf():
     parser = SafeConfigParser()

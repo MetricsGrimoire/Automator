@@ -566,22 +566,12 @@ def launch_mediawiki():
 def launch_downloads():
     # check if downloads option exists. If it does, downloads are executed
     if options.has_key('downloads'):
-        compose_msg("downloads analysis is being executed")
-        url_user = options['downloads']['url_user']
-        url_pass = options['downloads']['url_password']
-        url = options['downloads']['url']
-        db_name = options['generic']['db_downloads']
-        db_user = options['generic']['db_user']
-        db_password = options['generic']['db_password']
-        log_file = project_dir + '/log/launch_downloads.log'
+        compose_msg("downloads does not execute any tool. Only pre and post scripts")
 
- 
-        # sh script: $1 output dir, $2 url user, $3 url pass, $4 url, $5 db user, $6 db pass
-        cmd = "%s/downloads.sh %s %s %s %s %s %s >> %s 2>&1"\
-              % (downloads_dir, downs_dir, url_user, url_pass, url, db_user, db_name, log_file)
-        compose_msg(cmd, log_file)
-        os.system(cmd)
-        compose_msg("[OK] downloads executed")
+        # pre-scripts
+        launch_pre_tool_scripts('downloads')
+        # post-scripts
+        launch_post_tool_scripts('downloads')
 
 def launch_sibyl():
     # check if sibyl option exists

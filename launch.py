@@ -679,7 +679,7 @@ def get_report_module():
     grimoirelib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire")
     metricslib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire","metrics")
     studieslib = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire","analysis")
-    alchemy = os.path.join(project_dir, "tools", "GrimoireLib","grimoirelib_alch")
+    alchemy = os.path.join(project_dir, "tools", "GrimoireLib")
     for dir in [grimoirelib,metricslib,studieslib,alchemy]:
         sys.path.append(dir)
     import report
@@ -1134,7 +1134,7 @@ tasks_section = dict({
 
 # Use this for serial execution of data gathering
 tasks_order_serial = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
-                      'sibyl','octopus','identities','metrics','copy-json', 'metricsdef',
+                      'sibyl','octopus','identities','metrics','copy-json',
                       'git-production','db-dump','json-dump','rsync']
 
 # Use this for parallel execution of data gathering

@@ -322,6 +322,8 @@ def launch_bicho():
             backend_user = options['bicho']['backend_user']
         if options['bicho'].has_key('backend_password'):
             backend_password = options['bicho']['backend_password']
+        if options['bicho'].has_key('num-issues-query'):
+            num_issues_query = options['bicho']['num-issues-query']
         trackers = options['bicho']['trackers']
         log_table = None
         debug = options['bicho']['debug']
@@ -352,6 +354,8 @@ def launch_bicho():
             user_opt = ''
             if backend_user and backend_password:
                 user_opt = '--backend-user=%s --backend-password=%s' % (backend_user, backend_password)
+            if num_issues_query:
+                user_opt = '--num-issues=%s' % (num_issues_query)
             cmd = tools['its'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s %s -u %s %s >> %s 2>&1" \
                         % (db_user, db_pass, database, str(delay), backend, user_opt, t, flags, log_file)
             compose_msg(cmd, log_file)

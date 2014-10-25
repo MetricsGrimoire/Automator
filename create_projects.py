@@ -57,6 +57,10 @@ def read_options():
                       action="store_true",
                       dest="single_dash",
                       help="Create a single dashboard with all projects.")
+    parser.add_option("-n", "--name",
+                      action="store",
+                      dest="name",
+                      help="Name of the global project.")
     parser.add_option("--dbuser",
                       action="store",
                       dest="dbuser", default="root",
@@ -86,8 +90,8 @@ def read_options():
     if opts.web and not (opts.output_dir and opts.project_file):
         parser.error("--web needs also --dir")
 
-    if opts.single_dash and not (opts.output_dir and opts.dbuser):
-        parser.error("--web needs also --dir --dbuser")
+    if opts.single_dash and not (opts.output_dir and opts.dbuser and opts.name):
+        parser.error("--web needs also --dir --dbuser --name")
 
     if opts.remove_filter_item and not (opts.data_source and opts.output_dir):
         parser.error("--remove-filter-url  needs also --data-source")
@@ -239,7 +243,7 @@ def get_config_generic(project_name, project_data):
     # Keep the order using a list
     vars = [
             ["config_generator","create_project"],
-            ["mail","YOUR EMAIL"],
+            ["mail","automator@bitergia.com"],
             ["project",project_name],
             ["db_user","root"],
             ["db_password",""],
@@ -337,10 +341,10 @@ def get_config_mediawiki(project_data):
 
 def get_config_r(project_data):
     vars = [
-            ["rscript","run-analysis.py"],
             ["start_date","2010-01-01"],
             ["# end_date","2014-03-20"],
-            ["reports","repositories,companies,countries,people,domains,projects"],
+            ["# reports","repositories,companies,countries,people,domains,projects"],
+            ["reports","repositories,people,domains,projects"],
             ["# people_out", "bot1, bot2"],
             ["# companies_out", "company1, company2"],
             ["# domains_out", "domain1, domain2"],
@@ -350,8 +354,8 @@ def get_config_r(project_data):
 
 def get_config_identities(project_data):
     vars = [
-            ["countries","debug"],
-            ["companies","debug"],
+            ["#countries","debug"],
+            ["#companies","debug"],
     ]
     return vars
 
@@ -577,13 +581,13 @@ def create_db(db_name):
         db.close()
         logging.info (db_name+" created")
 
-def create_single_dash(projects, destdir):
+def create_single_dash(projects, destdir, name):
     """Create a single dashboard with all projects"""
     opts = read_options()
     logging.info("Creating a single dashboard with all projects")
     # Create project env
     logging.info("Joining all repositories for different projects")
-    single_project_name = "SingleProject"
+    single_project_name = name
     single_project_data = {}
 
     for project in projects:
@@ -721,7 +725,7 @@ if __name__ == '__main__':
         create_web(projects, opts.output_dir)
     elif opts.single_dash:
         projects = get_project_repos(opts.project_file)
-        create_single_dash(projects, opts.output_dir)
+        create_single_dash(projects, opts.output_dir, opts.name)
     elif opts.list_filter_items:
         items = get_filter_items(opts.data_source, opts.output_dir)
         for item in items: print(item)

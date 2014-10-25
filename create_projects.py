@@ -267,6 +267,8 @@ def get_bicho_backend(repos):
         backend = "bg"
     elif repos[0].find("launchpad") > -1:
         backend = "launchpad"
+    elif repos[0].find("jira") > -1:
+        backend = "jira"
     return backend
 
 def get_config_bicho(project_data):
@@ -279,6 +281,7 @@ def get_config_bicho(project_data):
             ["debug","True"],
             ["delay","1"],
             ["log_table","False"],
+            ["# num-issues-query","250"],
             ["trackers",trackers]
         ]
     return vars

@@ -57,6 +57,10 @@ def read_options():
                       action="store_true",
                       dest="single_dash",
                       help="Create a single dashboard with all projects.")
+    parser.add_option("--projects-tables",
+                      action="store_true",
+                      dest="projects_tables",
+                      help="Only create the projects SQL tables.")
     parser.add_option("-n", "--name",
                       action="store",
                       dest="name",
@@ -90,8 +94,11 @@ def read_options():
     if opts.web and not (opts.output_dir and opts.project_file):
         parser.error("--web needs also --dir")
 
-    if opts.single_dash and not (opts.output_dir and opts.dbuser and opts.name):
-        parser.error("--web needs also --dir --dbuser --name")
+    if opts.single_dash and not (opts.output_dir and opts.dbuser and opts.name and opts.project_file):
+        parser.error("--single needs also --dir --dbuser --name --projects")
+
+    if opts.projects_tables and not opts.single_dash:
+        parser.error("--projects-tables needs also --single")
 
     if opts.remove_filter_item and not (opts.data_source and opts.output_dir):
         parser.error("--remove-filter-url  needs also --data-source")
@@ -607,6 +614,8 @@ def create_single_dash(projects, destdir, name):
     create_projects_schema(db_identities)
     # Fill projects tables
     fill_projects(db_identities, projects)
+    # Just create the project tables
+    if (opts.projects_tables): return
     # Create automator config
     create_project(single_project_name, single_project_data, destdir)
 

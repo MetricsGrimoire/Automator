@@ -61,6 +61,10 @@ def read_options():
                       action="store_true",
                       dest="projects_tables",
                       help="Only create the projects SQL tables.")
+    parser.add_option("--projects-json",
+                      action="store_true",
+                      dest="projects_json",
+                      help="Create the projects_hierarchy.json file.")
     parser.add_option("-n", "--name",
                       action="store",
                       dest="name",
@@ -99,6 +103,9 @@ def read_options():
 
     if opts.projects_tables and not opts.single_dash:
         parser.error("--projects-tables needs also --single")
+
+    if opts.projects_json and not (opts.output_dir and opts.name):
+        parser.error("--projects-json needs also --dir --name")
 
     if opts.remove_filter_item and not (opts.data_source and opts.output_dir):
         parser.error("--remove-filter-url  needs also --data-source")
@@ -640,6 +647,10 @@ def read_main_conf(config_file):
 def import_grimoirelib(destdir):
     grimoirelib = os.path.join(destdir, "tools", "GrimoireLib","vizgrimoire")
     sys.path.append(grimoirelib)
+    metricslib = os.path.join(destdir, "tools", "GrimoireLib","vizgrimoire","metrics")
+    sys.path.append(metricslib)
+    studieslib = os.path.join(destdir, "tools", "GrimoireLib","vizgrimoire","analysis")
+    sys.path.append(studieslib)
     import report, GrimoireSQL
     automator_file = os.path.join(destdir,"conf/main.conf")
     report.Report.init(automator_file)
@@ -724,6 +735,39 @@ def create_web(projects, destdir):
     html_file.close()
     logging.info("Created html file " + os.path.join(destdir,"projects.html"))
 
+def create_projects_json(destdir, name):
+    """Create the projects_hierarchy.json to be used in the dash"""
+    import_grimoirelib(destdir)
+    import report, GrimoireSQL
+    from GrimoireUtils import createJSON
+
+
+    logging.info("Creating projects_hierarchy.json file ")
+
+    automator_file = os.path.join(destdir,"conf/main.conf")
+    automator = read_main_conf(automator_file)
+    db_user = automator['generic']['db_user']
+    db_password = automator['generic']['db_password']
+    db_name = automator['generic']['db_identities']
+
+    GrimoireSQL.SetDBChannel (database=db_name, user=db_user, password=db_password)
+    # JSON entry
+    #"mylyn.tasks": {
+    #    "parent_project": "mylyn",
+    #    "title": "Mylyn Tasks" 
+    # }
+    # In the current implementation just one leve, all "parent_project":"root"
+    q = "SELECT id, title from projects"
+    res = GrimoireSQL.ExecuteQuery(q)
+
+    projects = {}
+    for i in range(0,len(res['id'])):
+        projects[res['id'][i]] = {"parent_project":"root","title":res['title'][i]}
+    projects["root"] = {"title": name}
+
+    createJSON(projects, "projects_hierarchy.json")
+    logging.info("projects_hierarchy.json created.")
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s')
 
@@ -740,6 +784,8 @@ if __name__ == '__main__':
         for item in items: print(item)
     elif opts.remove_filter_item:
         remove_filter_item(opts.remove_filter_item, opts.data_source, opts.output_dir)
+    elif opts.projects_json:
+        create_projects_json(opts.output_dir, opts.name)
     else:
         projects = get_project_repos(opts.project_file)
         create_projects(projects, opts.output_dir)

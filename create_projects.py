@@ -287,6 +287,8 @@ def get_bicho_backend(repos):
         backend = "launchpad"
     elif repos[0].find("jira") > -1:
         backend = "jira"
+    elif repos[0].find("api.github.com") > -1:
+        backend = "github"
     return backend
 
 def get_config_bicho(project_data):
@@ -299,6 +301,9 @@ def get_config_bicho(project_data):
             ["debug","True"],
             ["delay","1"],
             ["log_table","False"],
+            ["# num-issues-query","250"],
+            ["# backend_user","miningbitergia"],
+            ["# backend_password","passwd"],
             ["# num-issues-query","250"],
             ["trackers",trackers]
         ]

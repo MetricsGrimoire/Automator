@@ -362,7 +362,8 @@ def get_config_r(project_data):
             ["# people_out", "bot1, bot2"],
             ["# companies_out", "company1, company2"],
             ["# domains_out", "domain1, domain2"],
-            ["period","months"]
+            ["period","months"],
+            ["studies","onion,ages"]
     ]
     return vars
 

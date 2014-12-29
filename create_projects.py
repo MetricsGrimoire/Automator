@@ -89,6 +89,14 @@ def read_options():
                       action="store",
                       dest="data_source",
                       help="Data source from which to remove a filter item.")
+    parser.add_option("--bicho-user",
+                      action="store",
+                      dest="bicho_user",
+                      help="bicho user name for the backend.")
+    parser.add_option("--bicho-password",
+                      action="store",
+                      dest="bicho_password",
+                      help="bicho user password for the backend.")
 
     (opts, args) = parser.parse_args()
 
@@ -307,6 +315,12 @@ def get_config_bicho(project_data):
             ["# num-issues-query","250"],
             ["trackers",trackers]
         ]
+
+    if opts.bicho_user:
+        vars.append(["backend_user", opts.bicho_user])
+    if opts.bicho_password:
+        vars.append(["backend_password", opts.bicho_password])
+
     return vars
 
 def get_config_gerrit(project_data):

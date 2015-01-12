@@ -222,6 +222,8 @@ def launch_checkdbs():
         dbs.append(options['generic']['db_qaforums'])
     if options['generic'].has_key('db_downloads'):
         dbs.append(options['generic']['db_downloads'])
+    if options['generic'].has_key('db_pullpo'):
+        dbs.append(options['generic']['db_pullpo'])
     for dbname in dbs:
         try:
              db = MySQLdb.connect(user = db_user, passwd = db_password,  db = dbname)

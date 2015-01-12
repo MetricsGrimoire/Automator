@@ -62,6 +62,7 @@ tools = {
     'mediawiki': '/usr/local/bin/mediawiki_analysis.py',
     'sibyl': '/usr/local/bin/sibyl.py',
     'octopus': '/usr/local/bin/octopus',
+    'pullpo': '/usr/local/bin/pullpo',
     'r': '/usr/bin/R',
     'git': '/usr/bin/git',
     'svn': '/usr/bin/svn',
@@ -378,7 +379,7 @@ def launch_gather():
     from multiprocessing import Process, active_children
 
     gather_tasks_order = ['cvsanaly','bicho','gerrit','mlstats',
-                          'irc','mediawiki', 'downloads', 'sibyl','octopus']
+                          'irc','mediawiki', 'downloads', 'sibyl','octopus','pullpo']
     for section in gather_tasks_order:
         logging.info("Executing %s ...." % (section))
         p = Process(target=tasks_section_gather[section])
@@ -644,6 +645,39 @@ def launch_octopus():
     else:
         compose_msg("[SKIPPED] octopus was not executed, no conf available")
 
+def launch_pullpo():
+    # check if octopusl option exists
+    if options.has_key('pullpo'):
+        if not check_tool(tools['pullpo']):
+            return
+
+        compose_msg("pullpo is being executed")
+        launched = False
+        db_user = options['generic']['db_user']
+        db_pass = options['generic']['db_password']
+        db_name = options['generic']['db_releases']
+        owner = options['pullpo']['owner']
+        project = options['pullpo']['project']
+        user = options['pullpo']['user']
+        password = options['pullpo']['password']
+        log_file = project_dir + '/log/launch_pullpo.log'
+
+        # pre-scripts
+        launch_pre_tool_scripts('pullpo')
+
+        cmd = tools['pullpo'] + " -u \"%s\" -p \"%s\" -d \"%s\" --gh-user=\"%s\" --gh-password=\"%s\" \"%s\" \"%s\">> %s 2>&1" \
+                      %(db_user, db_pass, db_name,  user, password, owner, project, log_file)
+        compose_msg(cmd, log_file)
+        os.system(cmd)
+        # TODO: it's needed to check if the process correctly finished
+        launched = True
+
+        if launched:
+            compose_msg("[OK] pullpo executed")
+        else:
+            compose_msg("[SKIPPED] pullpo not executed")
+    else:
+        compose_msg("[SKIPPED] pullpo was not executed, no conf available")
 
 # http://code.activestate.com/recipes/577376-simple-way-to-execute-multiple-process-in-parallel/
 def exec_commands(cmds):
@@ -1115,7 +1149,8 @@ tasks_section_gather = {
     'mediawiki': launch_mediawiki,
     'mlstats':launch_mlstats,
     'sibyl': launch_sibyl,
-    'octopus': launch_octopus
+    'octopus': launch_octopus,
+    'pullpo': launch_pullpo
 }
 
 tasks_section = dict({
@@ -1139,7 +1174,7 @@ tasks_section = dict({
 
 # Use this for serial execution of data gathering
 tasks_order_serial = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
-                      'sibyl','octopus','identities','metrics','copy-json',
+                      'sibyl','octopus','pullpo','identities','metrics','copy-json',
                       'git-production','db-dump','json-dump','rsync']
 
 # Use this for parallel execution of data gathering

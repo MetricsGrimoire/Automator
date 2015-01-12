@@ -657,7 +657,7 @@ def launch_pullpo():
         launched = False
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
-        db_name = options['generic']['db_releases']
+        db_name = options['generic']['db_pullpo']
         owner = options['pullpo']['owner']
         project = options['pullpo']['project']
         user = options['pullpo']['user']

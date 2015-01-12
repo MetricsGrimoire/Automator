@@ -947,6 +947,14 @@ def launch_database_dump():
             dbs.append([options['generic']['db_irc'],'irc']);
         if options['generic'].has_key('db_mediawiki'):
             dbs.append([options['generic']['db_mediawiki'],'mediawiki']);
+        if options['generic'].has_key('db_releases'):
+            dbs.append([options['generic']['db_releases'],'releases'])
+        if options['generic'].has_key('db_qaforums'):
+            dbs.append([options['generic']['db_qaforums'],'qaforums'])
+        if options['generic'].has_key('db_downloads'):
+            dbs.append([options['generic']['db_downloads'],'downloads'])
+        if options['generic'].has_key('db_pullpo'):
+            dbs.append([options['generic']['db_pullpo'],'pullpo'])
 
         fd = open(msg_body, 'a')
         destination = os.path.join(project_dir,options['db-dump']['destination_db_dump'])

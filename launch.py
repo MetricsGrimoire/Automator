@@ -659,7 +659,7 @@ def launch_pullpo():
         db_pass = options['generic']['db_password']
         db_name = options['generic']['db_pullpo']
         owner = options['pullpo']['owner']
-        project = options['pullpo']['project']
+        projects = options['pullpo']['projects']
         user = options['pullpo']['user']
         password = options['pullpo']['password']
         log_file = project_dir + '/log/launch_pullpo.log'
@@ -667,12 +667,14 @@ def launch_pullpo():
         # pre-scripts
         launch_pre_tool_scripts('pullpo')
 
-        cmd = tools['pullpo'] + " -u \"%s\" -p \"%s\" -d \"%s\" --gh-user=\"%s\" --gh-password=\"%s\" \"%s\" \"%s\">> %s 2>&1" \
-                      %(db_user, db_pass, db_name,  user, password, owner, project, log_file)
-        compose_msg(cmd, log_file)
-        os.system(cmd)
-        # TODO: it's needed to check if the process correctly finished
-        launched = True
+        for project in projects:
+
+            cmd = tools['pullpo'] + " -u \"%s\" -p \"%s\" -d \"%s\" --gh-user=\"%s\" --gh-password=\"%s\" \"%s\" \"%s\">> %s 2>&1" \
+                          %(db_user, db_pass, db_name,  user, password, owner, project, log_file)
+            compose_msg(cmd, log_file)
+            os.system(cmd)
+            # TODO: it's needed to check if the process correctly finished
+            launched = True
 
         if launched:
             compose_msg("[OK] pullpo executed")

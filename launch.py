@@ -750,6 +750,8 @@ def launch_metrics_scripts():
         metrics_tool = "report_tool.py"
         path = r_dir
 
+        launch_pre_tool_scripts('r')
+
         params = get_options()
 
         metrics_section = ''
@@ -779,6 +781,8 @@ def launch_metrics_scripts():
         exec_commands (commands)
 
         compose_msg("[OK] metrics tool executed")
+
+        launch_post_tool_scripts('r')
     else:
         compose_msg("[SKIPPED] Metrics tool was not executed, no conf available")
 

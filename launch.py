@@ -596,13 +596,18 @@ def launch_sibyl():
         db_name = options['generic']['db_qaforums']
         url = options['sibyl']['url']
         backend = options['sibyl']['backend']
+        api_key = tags = ""
+        if 'api_key' in options['sibyl']:
+            api_key = " -k \"" +  options['sibyl']['api_key'] + "\""
+        if 'tags' in options['sibyl']:
+            tags = " --tags \"" + options['sibyl']['tags'] + "\""
         log_file = project_dir + '/log/launch_sibyl.log'
 
         # pre-scripts
         launch_pre_tool_scripts('sibyl')
 
-        cmd = tools['sibyl'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --url=\"%s\" --type=\"%s\" >> %s 2>&1" \
-                      %(db_user, db_pass, db_name,  url, backend, log_file)
+        cmd = tools['sibyl'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --url=\"%s\" --type=\"%s\" %s %s >> %s 2>&1" \
+                      %(db_user, db_pass, db_name,  url, backend, api_key, tags, log_file)
         compose_msg(cmd, log_file)
         os.system(cmd)
         # TODO: it's needed to check if the process correctly finished

@@ -177,7 +177,7 @@ def config_r(tools_dir):
     # Configure R environment
     cmd = ["R", "CMD", "INSTALL", "-l",
            os.path.join(tools_dir,"r-lib"),
-           os.path.join(tools_dir,"GrimoireLib","vizgrimoire")]
+           os.path.join(tools_dir,"VizGrimoireUtils","grimoirelibR")]
     r_lib_dir = os.path.join(tools_dir, "r-lib")
     if not os.path.exists(r_lib_dir):
         os.makedirs(r_lib_dir)

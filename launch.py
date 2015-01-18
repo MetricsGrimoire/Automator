@@ -306,33 +306,41 @@ def launch_cvsanaly():
     else:
         compose_msg("[SKIPPED] cvsanaly not executed, no conf available")
 
-def launch_bicho():
+def launch_bicho(section = None):
+    do_bicho('bicho')
+    # find additional configs
+    do_bicho('bicho_1')
+
+def do_bicho(section = None):
     # reads a conf file with all of the information and launches bicho
-    if options.has_key('bicho'):
+    if section is None: section = 'bicho'
+    if not section.startswith("bicho"):
+        logging.error("Wrong bicho section name " + section)
+    if options.has_key(section):
         if not check_tool(tools['its']):
             return
 
         compose_msg("bicho is being executed")
         launched = False
 
-        database = options['generic']['db_bicho']
+        database = options['generic']['db_' + section]
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
-        delay = options['bicho']['delay']
-        backend = options['bicho']['backend']
+        delay = options[section]['delay']
+        backend = options[section]['backend']
         backend_user = backend_password = None
         num_issues_query = None
-        if options['bicho'].has_key('backend_user'):
-            backend_user = options['bicho']['backend_user']
-        if options['bicho'].has_key('backend_password'):
-            backend_password = options['bicho']['backend_password']
-        if options['bicho'].has_key('num-issues-query'):
-            num_issues_query = options['bicho']['num-issues-query']
-        trackers = options['bicho']['trackers']
+        if options[section].has_key('backend_user'):
+            backend_user = options[section]['backend_user']
+        if options[section].has_key('backend_password'):
+            backend_password = options[section]['backend_password']
+        if options[section].has_key('num-issues-query'):
+            num_issues_query = options[section]['num-issues-query']
+        trackers = options[section]['trackers']
         log_table = None
-        debug = options['bicho']['debug']
-        if options['bicho'].has_key('log_table'):
-            log_table = options['bicho']['log_table']
+        debug = options[section]['debug']
+        if options[section].has_key('log_table'):
+            log_table = options[section]['log_table']
         log_file = project_dir + '/log/launch_bicho.log'
 
 
@@ -346,7 +354,7 @@ def launch_bicho():
         last = len(trackers)
 
         # pre-scripts
-        launch_pre_tool_scripts('bicho')
+        launch_pre_tool_scripts(section)
 
         for t in trackers:
             launched = True
@@ -368,11 +376,11 @@ def launch_bicho():
             compose_msg("[OK] bicho executed")
 
             # post-scripts
-            launch_post_tool_scripts('bicho')
+            launch_post_tool_scripts(section)
         else:
             compose_msg("[SKIPPED] bicho was not executed")
     else:
-        compose_msg("[SKIPPED] bicho not executed, no conf available")
+        compose_msg("[SKIPPED] bicho not executed, no conf available for " + section)
 
 def launch_gather():
     """ This tasks will execute in parallel all data gathering tasks """

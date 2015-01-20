@@ -209,6 +209,8 @@ def launch_checkdbs():
         dbs.append(options['generic']['db_cvsanaly'])
     if options['generic'].has_key('db_bicho'):
         dbs.append(options['generic']['db_bicho'])
+    if options['generic'].has_key('db_bicho_1'):
+        dbs.append(options['generic']['db_bicho_1'])
     # mlstats creates the db if options['generic'].has_key('db_mlstats'): 
     if options['generic'].has_key('db_gerrit'):
         dbs.append(options['generic']['db_gerrit'])

@@ -1015,13 +1015,13 @@ def launch_json_dump():
     # copy and compression of json files to be rsync with customers
     if options.has_key('json-dump'):
 
-        origin = options['json-dump']['origin_json_dump']
-        origin = origin + '*json'
-        dest = options['json-dump']['destination_json_dump']
+        origin = os.path.join(project_dir,options['json-dump']['origin_json_dump'])
+        origin = origin + "*.json"
+        destination = os.path.join(project_dir, options['json-dump']['destination_json_dump'])
 
         fd = open(msg_body, 'a')
 
-        pr = subprocess.Popen([tools['compress'], 'a', dest, origin],
+        pr = subprocess.Popen([tools['compress'], 'a', destination, origin],
                  stdout = fd,
                  stderr = fd,
                  shell = False)

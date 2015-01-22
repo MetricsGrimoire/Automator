@@ -69,7 +69,10 @@ tools = {
     'mysqldump': '/usr/bin/mysqldump',
     'compress': '/usr/bin/7zr',
     'rm': '/bin/rm',
-    'rsync': '/usr/bin/rsync'
+    'rsync': '/usr/bin/rsync',
+    'sortinghat': '/usr/local/bin/sortinghat',
+    'mg2sh': '/usr/local/bin/mg2sh',
+    'sh2mg': '/usr/local/bin/sh2mg',
 }
 
 def get_options():
@@ -226,6 +229,7 @@ def launch_checkdbs():
         dbs.append(options['generic']['db_downloads'])
     if options['generic'].has_key('db_pullpo'):
         dbs.append(options['generic']['db_pullpo'])
+    # sortinghat creates the db itself if options['generic'].has_key('db_sortinghat'):
     for dbname in dbs:
         try:
              db = MySQLdb.connect(user = db_user, passwd = db_password,  db = dbname)
@@ -661,6 +665,96 @@ def launch_octopus():
             compose_msg("[SKIPPED] octopus not executed")
     else:
         compose_msg("[SKIPPED] octopus was not executed, no conf available")
+
+def get_ds_sortinghat_cmd(db, type):
+    db_user = options['generic']['db_user']
+    db_pass = options['generic']['db_password']
+    if (db_pass == ""): db_pass="''"
+    db_scm = options['generic']['db_cvsanaly']
+    db_ids = db_scm
+    log_file = project_dir + '/log/identities.log'
+
+    cmd = "%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1" \
+            % (idir, db_user, db_pass, db, db_ids, type, log_file)
+
+    return cmd
+
+def launch_sortinghat():
+    logging.info("Sortinghat working ...")
+    if not check_tool(tools['sortinghat']):
+        logging.info("Sortinghat tool not available,")
+        return
+    if 'db_sortinghat' not in options['generic']:
+        logging.info("No database for Sortinghat configured.")
+        return
+    project_name = options['generic']['project']
+    db_user = options['generic']['db_user']
+    db_pass = options['generic']['db_password']
+    db_name = options['generic']['db_sortinghat']
+    log_file = project_dir + '/log/launch_sortinghat.log'
+
+
+    # If the database for sorting hat does not exists, init it
+    try:
+         db = MySQLdb.connect(user = db_user, passwd = db_pass,  db = db_name)
+         db.close()
+         print ("Sortinghat " + db_name + " already exists")
+    except:
+        print ("Can't connect to " + db_name)
+        print ("Creating sortinghat database ...")
+        cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" init \"%s\">> %s 2>&1" \
+                      %(db_user, db_pass, db_name, log_file)
+        compose_msg(cmd, log_file)
+        os.system(cmd)
+
+    # For each data source export identities and load them in sortinghat
+    report = get_report_module()
+    dss = report.get_data_sources()
+    dss_not_supported = ['downloads']
+
+    # Import data in Sorting Hat
+    for ds in dss:
+        if ds.get_name() in dss_not_supported: continue
+        if ds.get_db_name() in options['generic']:
+            db_ds = options['generic'][ds.get_db_name()]
+        else:
+            logging.error(ds.get_db_name() + " not in automator main.conf")
+            continue
+        # Export identities from ds
+        if os.path.exists("/tmp/iden2sh.json"): os.remove("/tmp/iden2sh.json")
+        cmd = tools['mg2sh'] + " -u \"%s\" -p \"%s\" -d \"%s\" -o /tmp/iden2sh.json >> %s 2>&1" \
+                      %(db_user, db_pass, db_ds, log_file)
+        compose_msg(cmd, log_file)
+        os.system(cmd)
+        # Load identities in sortinghat
+        cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" load --source \"%s:%s\" --identities --matching simple  /tmp/iden2sh.json >> %s 2>&1" \
+                      %(db_user, db_pass, db_name, project_name, ds.get_name(), log_file)
+        compose_msg(cmd, log_file)
+        os.system(cmd)
+
+    # Export data from Sorting Hat
+    for ds in dss:
+        if ds.get_name() in dss_not_supported: continue
+        if ds.get_db_name() in options['generic']:
+            db_ds = options['generic'][ds.get_db_name()]
+        else:
+            logging.error(ds.get_db_name() + " not in automator main.conf")
+            continue
+        # Export identities from sh to file
+        if os.path.exists("/tmp/sh2iden.sql"): os.remove("/tmp/sh2iden.sql")
+        cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" export --source \"%s:%s\" --identities /tmp/sh2iden.sql >> %s 2>&1" \
+                      %(db_user, db_pass, db_name, project_name, ds.get_name(), log_file)
+        compose_msg(cmd, log_file)
+        os.system(cmd)
+        # Load identities in mg from file
+        cmd = tools['sh2mg'] + " -u \"%s\" -p \"%s\" -d \"%s\" --source \"%s:%s\" /tmp/sh2iden.sql >> %s 2>&1" \
+                      %(db_user, db_pass, db_ds, project_name, ds.get_name(), log_file)
+        compose_msg(cmd, log_file)
+        os.system(cmd)
+
+    # For each data source in sorting hat export identities and load them in the data source db
+
+    logging.info("Sortinghat done")
 
 def launch_pullpo():
     # check if octopusl option exists
@@ -1191,6 +1285,7 @@ tasks_section = dict({
     'gather':launch_gather,
     'git-production':launch_commit_jsones,
     'identities': launch_identity_scripts,
+    'sortinghat': launch_sortinghat,
     'json-dump':launch_json_dump,
     'metrics':launch_metrics_scripts,
     'metricsdef':launch_metricsdef_config,

@@ -208,6 +208,8 @@ def launch_checkdbs():
     db_user = options['generic']['db_user']
     db_password = options['generic']['db_password']
 
+    if options['generic'].has_key('db_identities'):
+        dbs.append(options['generic']['db_identities'])
     if options['generic'].has_key('db_cvsanaly'):
         dbs.append(options['generic']['db_cvsanaly'])
     if options['generic'].has_key('db_bicho'):
@@ -223,8 +225,11 @@ def launch_checkdbs():
         dbs.append(options['generic']['db_mediawiki'])
     if options['generic'].has_key('db_releases'):
         dbs.append(options['generic']['db_releases'])
+    # LEGACY qaforums. Use sibyl in new deployments.
     if options['generic'].has_key('db_qaforums'):
         dbs.append(options['generic']['db_qaforums'])
+    if options['generic'].has_key('db_sibyl'):
+        dbs.append(options['generic']['db_sibyl'])
     if options['generic'].has_key('db_downloads'):
         dbs.append(options['generic']['db_downloads'])
     if options['generic'].has_key('db_pullpo'):

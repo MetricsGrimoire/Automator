@@ -672,19 +672,6 @@ def launch_octopus():
     else:
         compose_msg("[SKIPPED] octopus was not executed, no conf available")
 
-def get_ds_sortinghat_cmd(db, type):
-    db_user = options['generic']['db_user']
-    db_pass = options['generic']['db_password']
-    if (db_pass == ""): db_pass="''"
-    db_scm = options['generic']['db_cvsanaly']
-    db_ids = db_scm
-    log_file = project_dir + '/log/identities.log'
-
-    cmd = "%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1" \
-            % (idir, db_user, db_pass, db, db_ids, type, log_file)
-
-    return cmd
-
 def launch_sortinghat():
     logging.info("Sortinghat working ...")
     if not check_tool(tools['sortinghat']):

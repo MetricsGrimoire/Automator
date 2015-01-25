@@ -33,7 +33,7 @@ from optparse import OptionParser
 import os.path
 from subprocess import call
 import sys
-import urllib2, urllib
+import urllib
 from ConfigParser import SafeConfigParser
 
 def read_options():
@@ -372,6 +372,24 @@ def get_config_mediawiki(project_data):
     ]
     return vars
 
+def get_sibyl_backend(repos):
+    """Try to find the sibyl backend"""
+    backend = None
+    discourse_url = repos[0]+"/categories.json"
+    res = urllib.urlopen(discourse_url)
+    if res.getcode() == 200:
+        backend = "discourse"
+    return backend
+
+def get_config_sibyl(project_data):
+    vars = [
+        ["url", ",".join(project_data['sibyl_url'])],
+        ["backend",  get_sibyl_backend(project_data['sibyl_url'])],
+        ["# stackoverflow sibyl_api_key",  ""],
+        ["# stackoverflow sibyl_tags",  ""]
+    ]
+    return vars
+
 def get_config_r(project_data):
     vars = [
             ["start_date","2010-01-01"],
@@ -418,7 +436,7 @@ def check_config_file(project_data):
 def get_data_sources():
     """Each data source will contains repository in a comma separated list"""
     return ["source","trackers","gerrit_projects",
-            "mailing_lists","irc_channels","mediawiki_sites"]
+            "mailing_lists","irc_channels","mediawiki_sites","sibyl_url"]
 
 def create_project_config(name, project_data, output_dir):
     """Create Automator project config file."""
@@ -437,6 +455,7 @@ def create_project_config(name, project_data, output_dir):
                 ["mlstats",get_config_mlstats],
                 ["irc",get_config_irc],
                 ["mediawiki",get_config_mediawiki],
+                ["sibyl",get_config_sibyl],
                 ["r",get_config_r],
                 ["identities",get_config_identities],
                 ["git-production_OFF",get_config_git_production],
@@ -457,6 +476,8 @@ def create_project_config(name, project_data, output_dir):
         elif section[0] == "irc" and not "irc_channels" in project_data:
             continue
         elif section[0] == "mediawiki" and not "mediawiki_sites" in project_data:
+            continue
+        elif section[0] == "sibyl" and not "sibyl_url" in project_data:
             continue
         parser.add_section(section[0])
         if section[0] == "generic":
@@ -583,7 +604,8 @@ def fill_projects(db_name, projects):
         "gerrit_projects":"scr",
         "mailing_lists":"mls",
         "irc_channels":"irc",
-        "mediawiki_sites":"mediawiki"
+        "mediawiki_sites":"mediawiki",
+        "sibyl_url":"sibyl"
     }
 
     for project in projects_db:

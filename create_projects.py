@@ -283,6 +283,8 @@ def get_config_generic(project_name, project_data):
         vars.append(["db_irc",db_prefix+"_irc_"+db_suffix])
     if "mediawiki_sites" in project_data:
         vars.append(["db_mediawiki",db_prefix+"_mediawiki_"+db_suffix])
+    if "sibyl_url" in project_data:
+        vars.append(["db_sibyl",db_prefix+"_sibyl_"+db_suffix])
 
     return vars
 

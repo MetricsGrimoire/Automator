@@ -612,7 +612,8 @@ def launch_sibyl():
         launched = False
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
-        db_name = options['generic']['db_qaforums']
+        # db_name = options['generic']['db_qaforums']
+        db_name = options['generic']['db_sibyl']
         url = options['sibyl']['url']
         backend = options['sibyl']['backend']
         api_key = tags = ""

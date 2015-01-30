@@ -893,8 +893,7 @@ def get_ds_identities_cmd(db, type):
     db_user = options['generic']['db_user']
     db_pass = options['generic']['db_password']
     if (db_pass == ""): db_pass="''"
-    db_scm = options['generic']['db_cvsanaly']
-    db_ids = db_scm
+    db_ids = options['generic']['db_identities']
     log_file = project_dir + '/log/identities.log'
 
     cmd = "%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1" \
@@ -913,15 +912,14 @@ def launch_identity_scripts():
         if (db_pass == ""): db_pass="''"
         log_file = project_dir + '/log/identities.log'
 
-        # SCM is specific in generating identities. It includes identities tables.
-        if options['generic'].has_key('db_cvsanaly'):
+        if options['generic'].has_key('db_identities'):
             # TODO: -i no is needed in first execution
-            db_scm = options['generic']['db_cvsanaly']
-            cmd = "%s/unifypeople.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_scm, log_file)
+            db_identities = options['generic']['db_identities']
+            cmd = "%s/unifypeople.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_identities, log_file)
             compose_msg(cmd, log_file)
             os.system(cmd)
             # Companies are needed in Top because bots are included in a company
-            cmd = "%s/domains_analysis.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_scm, log_file)
+            cmd = "%s/domains_analysis.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_identities, log_file)
             compose_msg(cmd, log_file)
             os.system(cmd)
 
@@ -929,6 +927,8 @@ def launch_identity_scripts():
         report = get_report_module()
         dss = report.get_data_sources()
         for ds in dss:
+            if ds.get_db_name() == "db_cvsanaly":
+                continue # db_cvsanaly and db_identities are the same db
             if ds.get_db_name() in options['generic']:
                 db_ds = options['generic'][ds.get_db_name()]
             else:
@@ -940,13 +940,13 @@ def launch_identity_scripts():
 
         if options['identities'].has_key('countries'):
             cmd = "%s/load_ids_mapping.py -m countries -t true -u %s -p %s --database %s >> %s 2>&1" \
-                        % (idir, db_user, db_pass, db_scm, log_file)
+                        % (idir, db_user, db_pass, db_identities, log_file)
             compose_msg(cmd, log_file)
             os.system(cmd)
 
         if options['identities'].has_key('companies'):
             cmd = "%s/load_ids_mapping.py -m companies -t true -u %s -p %s --database %s >> %s 2>&1" \
-                        % (idir, db_user, db_pass, db_scm, log_file)
+                        % (idir, db_user, db_pass, db_identities, log_file)
             compose_msg(cmd, log_file)
             os.system(cmd)
 

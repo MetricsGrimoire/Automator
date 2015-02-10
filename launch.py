@@ -831,6 +831,50 @@ def get_report_module():
     report.Report.init(os.path.join(conf_dir,"main.conf"))
     return report.Report
 
+def launch_events_scripts():
+    # Execute metrics tool using the automator config
+    # Start one report_tool per data source active
+    if options.has_key('metrics') or options.has_key('r'):
+
+        compose_msg("events being generated")
+
+        json_dir = '../../../json'
+        conf_file = project_dir + '/conf/main.conf'
+        log_file = project_dir + '/log/launch-'
+
+        metrics_tool = "report_tool.py"
+        path = r_dir
+
+        params = get_options()
+
+        commands = [] # One report_tool per data source
+        report = get_report_module()
+        dss = report.get_data_sources()
+
+        if params.subtask:
+            ds = report.get_data_source(params.subtask)
+            if ds is None:
+                logging.error("Data source " + params.subtask + " not found")
+                return
+            dss = [ds]
+
+        ds_events_supported = ['scm']
+        for ds in dss:
+            if ds.get_name() not in ds_events_supported: continue
+            log_file_ds = log_file + ds.get_name()+"-events.log"
+            os.chdir(path)
+            cmd = "./%s -c %s -o %s --data-source %s --events  >> %s 2>&1" \
+                % (metrics_tool, conf_file, json_dir, ds.get_name(), log_file_ds)
+            commands.append([cmd])
+
+        exec_commands (commands)
+
+        compose_msg("[OK] events generated")
+
+    else:
+        compose_msg("[SKIPPED] Events not generated, no conf available")
+
+
 def launch_metrics_scripts():
     # Execute metrics tool using the automator config
     # Start one report_tool per data source active
@@ -1280,6 +1324,7 @@ tasks_section = dict({
     'identities': launch_identity_scripts,
     'sortinghat': launch_sortinghat,
     'json-dump':launch_json_dump,
+    'events':launch_events_scripts,
     'metrics':launch_metrics_scripts,
     'metricsdef':launch_metricsdef_config,
     'r':launch_metrics_scripts, # compatibility support
@@ -1293,11 +1338,11 @@ tasks_section = dict({
 
 # Use this for serial execution of data gathering
 tasks_order_serial = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
-                      'sibyl','octopus','pullpo','identities','metrics','copy-json',
+                      'sibyl','octopus','pullpo','identities','events','metrics','copy-json',
                       'git-production','db-dump','json-dump','rsync']
 
 # Use this for parallel execution of data gathering
-tasks_order_parallel = ['check-dbs','gather','identities','metrics','copy-json',
+tasks_order_parallel = ['check-dbs','gather','identities','events','metrics','copy-json',
                         'git-production','db-dump','json-dump','rsync']
 
 tasks_order = tasks_order_parallel

@@ -762,17 +762,27 @@ def launch_pullpo():
         db_name = options['generic']['db_pullpo']
         owner = options['pullpo']['owner']
         projects = options['pullpo']['projects']
-        user = options['pullpo']['user']
-        password = options['pullpo']['password']
+        if options['pullpo'].has_key('oauth_key'):
+            oauth_key = options['pullpo']['oauth_key']
+        else:
+            user = options['pullpo']['user']
+            password = options['pullpo']['password']
+        url = ""
+        if options['pullpo'].has_key('url'):
+            url = "--gh-url " + options['pullpo']['url']
         log_file = project_dir + '/log/launch_pullpo.log'
 
         # pre-scripts
         launch_pre_tool_scripts('pullpo')
 
         for project in projects:
+            if options['pullpo'].has_key('oauth_key'):
+                auth_params = "--gh-token " + oauth_key
+            else:
+                auth_params = "--gh-user=\""+user+"\" --gh-password=\""+password+"\""
 
-            cmd = tools['pullpo'] + " -u \"%s\" -p \"%s\" -d \"%s\" --gh-user=\"%s\" --gh-password=\"%s\" \"%s\" \"%s\">> %s 2>&1" \
-                          %(db_user, db_pass, db_name,  user, password, owner, project, log_file)
+            cmd = tools['pullpo'] + " -u \"%s\" -p \"%s\" -d \"%s\" %s %s \"%s\" \"%s\">> %s 2>&1" \
+                          %(db_user, db_pass, db_name, auth_params , url, owner, project, log_file)
             compose_msg(cmd, log_file)
             os.system(cmd)
             # TODO: it's needed to check if the process correctly finished

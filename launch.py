@@ -672,6 +672,48 @@ def launch_octopus():
     else:
         compose_msg("[SKIPPED] octopus was not executed, no conf available")
 
+
+def check_sortinghat_db(db_user, db_pass, db_name):
+    """ Check that the db exists and if not, create it """
+    try:
+         db = MySQLdb.connect(user = db_user, passwd = db_pass,  db = db_name)
+         db.close()
+         print ("Sortinghat " + db_name + " already exists")
+    except:
+        print ("Can't connect to " + db_name)
+        print ("Creating sortinghat database ...")
+        cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" init \"%s\">> %s 2>&1" \
+                      %(db_user, db_pass, db_name, log_file)
+        compose_msg(cmd, log_file)
+        os.system(cmd)
+
+def launch_sortinghat_affiliations():
+    logging.info("Loading Sortinghat affiliations ...")
+    if not check_tool(tools['sortinghat']):
+        logging.info("Sortinghat tool not available,")
+        return
+    if 'db_sortinghat' not in options['generic']:
+        logging.info("No database for Sortinghat configured.")
+        return
+    project_name = options['generic']['project']
+    db_user = options['generic']['db_user']
+    db_pass = options['generic']['db_password']
+    db_name = options['generic']['db_sortinghat']
+    log_file = project_dir + '/log/launch_sortinghat_affiliations.log'
+
+    check_sortinghat_db(db_user, db_pass, db_name)
+
+    # Load affiliations
+    aff_file = project_dir + '/identities/affiliations.json'
+    if os.path.isfile(aff_file) is False:
+        logging.error("Sortinghat affiliations file does not exists: " + aff_file)
+        return
+    cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" load --orgs %s  >> %s 2>&1" \
+              %(db_user, db_pass, db_name, aff_file , log_file)
+    compose_msg(cmd, log_file)
+    os.system(cmd)
+    logging.error("Sortinghat affiliations file loaded: " + aff_file)
+
 def launch_sortinghat():
     logging.info("Sortinghat working ...")
     if not check_tool(tools['sortinghat']):
@@ -686,19 +728,9 @@ def launch_sortinghat():
     db_name = options['generic']['db_sortinghat']
     log_file = project_dir + '/log/launch_sortinghat.log'
 
+    check_sortinghat_db(db_user, db_pass, db_name)
 
-    # If the database for sorting hat does not exists, init it
-    try:
-         db = MySQLdb.connect(user = db_user, passwd = db_pass,  db = db_name)
-         db.close()
-         print ("Sortinghat " + db_name + " already exists")
-    except:
-        print ("Can't connect to " + db_name)
-        print ("Creating sortinghat database ...")
-        cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" init \"%s\">> %s 2>&1" \
-                      %(db_user, db_pass, db_name, log_file)
-        compose_msg(cmd, log_file)
-        os.system(cmd)
+    launch_sortinghat_affiliations()
 
     # For each data source export identities and load them in sortinghat
     report = get_report_module()

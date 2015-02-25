@@ -164,12 +164,11 @@ def get_scm_repos(dir = scm_dir):
     for r in repos:
         repo_dir_git = os.path.join(dir,r,".git")
         repo_dir_svn = os.path.join(dir,r,".svn")
-        if not os.path.isdir(repo_dir_git) and not os.path.isdir(repo_dir_svn):
-            sub_repos = get_scm_repos(os.path.join(dir,r))
-            for sub_repo in sub_repos:
-                all_repos.append(sub_repo)
-        else:
+        if os.path.isdir(repo_dir_git) or os.path.isdir(repo_dir_svn):
             all_repos.append(os.path.join(dir,r))
+        sub_repos = get_scm_repos(os.path.join(dir,r))
+        for sub_repo in sub_repos:
+            all_repos.append(sub_repo)
     return all_repos
 
 def update_scm(dir = scm_dir):

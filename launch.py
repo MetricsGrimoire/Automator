@@ -674,6 +674,7 @@ def launch_octopus():
 
 def check_sortinghat_db(db_user, db_pass, db_name):
     """ Check that the db exists and if not, create it """
+    log_file = project_dir + '/log/launch_sortinghat_affiliations.log'
     try:
          db = MySQLdb.connect(user = db_user, passwd = db_pass,  db = db_name)
          db.close()

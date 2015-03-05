@@ -747,13 +747,13 @@ def launch_sortinghat():
             continue
         # Export identities from ds
         if os.path.exists("/tmp/iden2sh.json"): os.remove("/tmp/iden2sh.json")
-        cmd = tools['mg2sh'] + " -u \"%s\" -p \"%s\" -d \"%s\" -o /tmp/iden2sh.json >> %s 2>&1" \
-                      %(db_user, db_pass, db_ds, log_file)
+        cmd = tools['mg2sh'] + " -u \"%s\" -p \"%s\" -d \"%s\" --source \"%s:%s\" -o /tmp/iden2sh.json >> %s 2>&1" \
+                      %(db_user, db_pass, db_ds, project_name, ds.get_name(), log_file)
         compose_msg(cmd, log_file)
         os.system(cmd)
         # Load identities in sortinghat
-        cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" load --source \"%s:%s\" --identities --matching simple  /tmp/iden2sh.json >> %s 2>&1" \
-                      %(db_user, db_pass, db_name, project_name, ds.get_name(), log_file)
+        cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" load --matching simple  /tmp/iden2sh.json >> %s 2>&1" \
+                      %(db_user, db_pass, db_name, log_file)
         compose_msg(cmd, log_file)
         os.system(cmd)
 

@@ -752,7 +752,7 @@ def launch_sortinghat():
         compose_msg(cmd, log_file)
         os.system(cmd)
         # Load identities in sortinghat
-        cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" load --matching simple  /tmp/iden2sh.json >> %s 2>&1" \
+        cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" load --matching email-name  /tmp/iden2sh.json >> %s 2>&1" \
                       %(db_user, db_pass, db_name, log_file)
         compose_msg(cmd, log_file)
         os.system(cmd)

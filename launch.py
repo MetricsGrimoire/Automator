@@ -1004,10 +1004,16 @@ def launch_identity_scripts():
             cmd = "%s/unifypeople.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_identities, log_file)
             compose_msg(cmd, log_file)
             os.system(cmd)
-            # Companies are needed in Top because bots are included in a company
             cmd = "%s/domains_analysis.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_identities, log_file)
             compose_msg(cmd, log_file)
             os.system(cmd)
+
+            if 'db_sortinghat' in options['generic']:
+                db_sortinghat = options['generic']['db_sortinghat']
+                cmd = "%s/domains_analysis.py -u %s -p %s -d %s --sortinghat>> %s 2>&1" \
+                    % (idir, db_user, db_pass, db_sortinghat, log_file)
+                compose_msg(cmd, log_file)
+                os.system(cmd)
 
         # Generate unique identities for all data sources active
         report = get_report_module()

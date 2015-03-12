@@ -1170,6 +1170,8 @@ def launch_database_dump():
             dbs.append([options['generic']['db_releases'],'releases'])
         if options['generic'].has_key('db_qaforums'):
             dbs.append([options['generic']['db_qaforums'],'qaforums'])
+        if options['generic'].has_key('db_sibyl'):
+            dbs.append([options['generic']['db_sibyl'],'qaforums'])
         if options['generic'].has_key('db_downloads'):
             dbs.append([options['generic']['db_downloads'],'downloads'])
         if options['generic'].has_key('db_pullpo'):

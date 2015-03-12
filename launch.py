@@ -793,7 +793,7 @@ def launch_pullpo():
         db_pass = options['generic']['db_password']
         db_name = options['generic']['db_pullpo']
         owner = options['pullpo']['owner']
-        projects = options['pullpo']['projects']
+        owners = owner.split(",")
         if options['pullpo'].has_key('oauth_key'):
             oauth_key = options['pullpo']['oauth_key']
         else:
@@ -807,18 +807,37 @@ def launch_pullpo():
         # pre-scripts
         launch_pre_tool_scripts('pullpo')
 
-        for project in projects:
-            if options['pullpo'].has_key('oauth_key'):
-                auth_params = "--gh-token " + oauth_key
-            else:
-                auth_params = "--gh-user=\""+user+"\" --gh-password=\""+password+"\""
+        # Common pullpo command for all options
+        if options['pullpo'].has_key('oauth_key'):
+            auth_params = "--gh-token " + oauth_key
+        else:
+            auth_params = "--gh-user=\""+user+"\" --gh-password=\""+password+"\""
 
-            cmd = tools['pullpo'] + " -u \"%s\" -p \"%s\" -d \"%s\" %s %s \"%s\" \"%s\">> %s 2>&1" \
-                          %(db_user, db_pass, db_name, auth_params , url, owner, project, log_file)
-            compose_msg(cmd, log_file)
-            os.system(cmd)
-            # TODO: it's needed to check if the process correctly finished
-            launched = True
+        pullpo_cmd = tools['pullpo'] + " -u \"%s\" -p \"%s\" -d \"%s\" %s %s " \
+                          %(db_user, db_pass, db_name, auth_params , url)
+
+        for owner in owners:
+            projects = None
+            if options['pullpo'].has_key('projects') and len(owners) == 1:
+                projects = options['pullpo']['projects']
+            elif options['pullpo'].has_key('projects'):
+                logging.error("Wrong main.conf. Several pullpo owners and general projects config.")
+                raise
+            if len(owners) > 1:
+                if options['pullpo'].has_key('projects_' + owner):
+                    projects = options['pullpo']['projects_' + owner].split(",")
+            if projects:
+                # Launch pullpo for each project configured
+                for project in projects:
+                    cmd = pullpo_cmd +  "\"%s\"  \"%s\">> %s 2>&1" % (owner, project, log_file)
+                    compose_msg(cmd, log_file)
+                    os.system(cmd)
+            else:
+                # Launch pullpo for all the repositories
+                cmd = pullpo_cmd + "\"%s\"  >> %s 2>&1" % (owner, log_file)
+                compose_msg(cmd, log_file)
+                os.system(cmd)
+        launched = True
 
         if launched:
             compose_msg("[OK] pullpo executed")

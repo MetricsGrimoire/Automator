@@ -38,6 +38,7 @@ import distutils.dir_util
 import json
 import datetime as dt
 from optparse import OptionGroup, OptionParser
+from tempfile import NamedTemporaryFile
 from ConfigParser import SafeConfigParser
 
 import MySQLdb
@@ -737,6 +738,11 @@ def launch_sortinghat():
     dss = report.get_data_sources()
     dss_not_supported = ['downloads']
 
+    # Temporal file to export and import identities from/in SH
+    io_file = NamedTemporaryFile()
+    io_file_name = io_file.name
+    io_file.close()
+
     # Import data in Sorting Hat
     for ds in dss:
         if ds.get_name() in dss_not_supported: continue
@@ -746,16 +752,16 @@ def launch_sortinghat():
             logging.error(ds.get_db_name() + " not in automator main.conf")
             continue
         # Export identities from ds
-        if os.path.exists("/tmp/iden2sh.json"): os.remove("/tmp/iden2sh.json")
-        cmd = tools['mg2sh'] + " -u \"%s\" -p \"%s\" -d \"%s\" --source \"%s:%s\" -o /tmp/iden2sh.json >> %s 2>&1" \
-                      %(db_user, db_pass, db_ds, project_name, ds.get_name(), log_file)
+        cmd = tools['mg2sh'] + " -u \"%s\" -p \"%s\" -d \"%s\" --source \"%s:%s\" -o %s >> %s 2>&1" \
+                      %(db_user, db_pass, db_ds, project_name.lower(), ds.get_name(), io_file_name, log_file)
         compose_msg(cmd, log_file)
         os.system(cmd)
         # Load identities in sortinghat
-        cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" load --matching email-name  /tmp/iden2sh.json >> %s 2>&1" \
-                      %(db_user, db_pass, db_name, log_file)
+        cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" load --matching email-name  %s >> %s 2>&1" \
+                      %(db_user, db_pass, db_name, io_file_name, log_file)
         compose_msg(cmd, log_file)
         os.system(cmd)
+        os.remove(io_file_name)
 
     # Export data from Sorting Hat
     for ds in dss:
@@ -766,16 +772,16 @@ def launch_sortinghat():
             logging.error(ds.get_db_name() + " not in automator main.conf")
             continue
         # Export identities from sh to file
-        if os.path.exists("/tmp/sh2iden.sql"): os.remove("/tmp/sh2iden.sql")
-        cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" export --source \"%s:%s\" --identities /tmp/sh2iden.sql >> %s 2>&1" \
-                      %(db_user, db_pass, db_name, project_name, ds.get_name(), log_file)
+        cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" export --source \"%s:%s\" --identities %s >> %s 2>&1" \
+                      %(db_user, db_pass, db_name, project_name.lower(), ds.get_name(), io_file_name, log_file)
         compose_msg(cmd, log_file)
         os.system(cmd)
         # Load identities in mg from file
-        cmd = tools['sh2mg'] + " -u \"%s\" -p \"%s\" -d \"%s\" --source \"%s:%s\" /tmp/sh2iden.sql >> %s 2>&1" \
-                      %(db_user, db_pass, db_ds, project_name, ds.get_name(), log_file)
+        cmd = tools['sh2mg'] + " -u \"%s\" -p \"%s\" -d \"%s\" --source \"%s:%s\" %s >> %s 2>&1" \
+                      %(db_user, db_pass, db_ds, project_name.lower(), ds.get_name(), io_file_name, log_file)
         compose_msg(cmd, log_file)
         os.system(cmd)
+        os.remove(io_file_name)
 
     # For each data source in sorting hat export identities and load them in the data source db
 

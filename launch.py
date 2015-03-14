@@ -258,6 +258,9 @@ def launch_scripts(scripts):
         compose_msg("%s script completed" % script)
 
 def launch_pre_tool_scripts(tool):
+    if tool not in options:
+        return
+
     if options[tool].has_key('pre_scripts'):
         compose_msg("Running %s pre scripts" % tool)
         launch_scripts(options[tool]['pre_scripts'])
@@ -266,6 +269,9 @@ def launch_pre_tool_scripts(tool):
         compose_msg("No %s pre scripts configured" % tool)
 
 def launch_post_tool_scripts(tool):
+    if tool not in options:
+        return
+
     if options[tool].has_key('post_scripts'):
         compose_msg("Running %s post scripts" % tool)
         launch_scripts(options[tool]['post_scripts'])
@@ -688,33 +694,6 @@ def check_sortinghat_db(db_user, db_pass, db_name):
         compose_msg(cmd, log_file)
         os.system(cmd)
 
-def launch_sortinghat_affiliations():
-    logging.info("Loading Sortinghat affiliations ...")
-    if not check_tool(tools['sortinghat']):
-        logging.info("Sortinghat tool not available,")
-        return
-    if 'db_sortinghat' not in options['generic']:
-        logging.info("No database for Sortinghat configured.")
-        return
-    project_name = options['generic']['project']
-    db_user = options['generic']['db_user']
-    db_pass = options['generic']['db_password']
-    db_name = options['generic']['db_sortinghat']
-    log_file = project_dir + '/log/launch_sortinghat_affiliations.log'
-
-    check_sortinghat_db(db_user, db_pass, db_name)
-
-    # Load affiliations
-    aff_file = project_dir + '/identities/affiliations.json'
-    if os.path.isfile(aff_file) is False:
-        logging.error("Sortinghat affiliations file does not exists: " + aff_file)
-        return
-    cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" load --orgs %s  >> %s 2>&1" \
-              %(db_user, db_pass, db_name, aff_file , log_file)
-    compose_msg(cmd, log_file)
-    os.system(cmd)
-    logging.error("Sortinghat affiliations file loaded: " + aff_file)
-
 def launch_sortinghat():
     logging.info("Sortinghat working ...")
     if not check_tool(tools['sortinghat']):
@@ -731,7 +710,8 @@ def launch_sortinghat():
 
     check_sortinghat_db(db_user, db_pass, db_name)
 
-    launch_sortinghat_affiliations()
+    # pre-scripts
+    launch_pre_tool_scripts('sortinghat')
 
     # For each data source export identities and load them in sortinghat
     report = get_report_module()
@@ -763,6 +743,18 @@ def launch_sortinghat():
         os.system(cmd)
         os.remove(io_file_name)
 
+    # Complete main identifier
+    identifier2sh = identities_dir + '/identifier2sh.py'
+    cmd = identifier2sh + " -d \"%s\" " % (db_name)
+    compose_msg(cmd, log_file)
+    os.system(cmd)
+
+    # Do affiliations
+    cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" affiliate  >> %s 2>&1" \
+              %(db_user, db_pass, db_name, log_file)
+    compose_msg(cmd, log_file)
+    os.system(cmd)
+
     # Export data from Sorting Hat
     for ds in dss:
         if ds.get_name() in dss_not_supported: continue
@@ -783,12 +775,15 @@ def launch_sortinghat():
         os.system(cmd)
         os.remove(io_file_name)
 
-        # Create domains tables
-        db_sortinghat = options['generic']['db_sortinghat']
-        cmd = "%s/domains_analysis.py -u %s -p %s -d %s --sortinghat>> %s 2>&1" \
-            % (idir, db_user, db_pass, db_name, log_file)
-        compose_msg(cmd, log_file)
-        os.system(cmd)
+    # Create domains tables
+    db_sortinghat = options['generic']['db_sortinghat']
+    cmd = "%s/domains_analysis.py -u %s -p %s -d %s --sortinghat>> %s 2>&1" \
+        % (identities_dir, db_user, db_pass, db_name, log_file)
+    compose_msg(cmd, log_file)
+    os.system(cmd)
+
+    # post-scripts
+    launch_post_tool_scripts('sortinghat')
 
     logging.info("Sortinghat done")
 
@@ -1028,8 +1023,13 @@ def launch_identity_scripts():
         if (db_pass == ""): db_pass="''"
         log_file = project_dir + '/log/identities.log'
 
+        if options['generic'].has_key('db_identities') and \
+            options['generic'].has_key('db_sortinghat'):
+            if options['generic']['db_identities'] == options['generic']['db_sortinghat']:
+                compose_msg("Sortinghat configuration. Not executing identities.")
+                return
+
         if options['generic'].has_key('db_identities'):
-            # TODO: -i no is needed in first execution
             db_identities = options['generic']['db_identities']
             cmd = "%s/unifypeople.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_identities, log_file)
             compose_msg(cmd, log_file)

@@ -1411,11 +1411,11 @@ tasks_section = dict({
 
 # Use this for serial execution of data gathering
 tasks_order_serial = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
-                      'sibyl','octopus','pullpo','identities','events','metrics','copy-json',
+                      'sibyl','octopus','pullpo','sortinghat','events','metrics','copy-json',
                       'git-production','db-dump','json-dump','rsync']
 
 # Use this for parallel execution of data gathering
-tasks_order_parallel = ['check-dbs','gather','identities','events','metrics','copy-json',
+tasks_order_parallel = ['check-dbs','gather','sortinghat','events','metrics','copy-json',
                         'git-production','db-dump','json-dump','rsync']
 
 tasks_order = tasks_order_parallel

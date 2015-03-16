@@ -776,6 +776,7 @@ def launch_sortinghat():
         os.remove(io_file_name)
 
     # Create domains tables
+    if db_pass == '': db_pass = "''"
     db_sortinghat = options['generic']['db_sortinghat']
     cmd = "%s/domains_analysis.py -u %s -p %s -d %s --sortinghat>> %s 2>&1" \
         % (identities_dir, db_user, db_pass, db_name, log_file)

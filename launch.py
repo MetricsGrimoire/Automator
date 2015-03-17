@@ -235,6 +235,8 @@ def launch_checkdbs():
     if options['generic'].has_key('db_pullpo'):
         dbs.append(options['generic']['db_pullpo'])
     # sortinghat creates the db itself if options['generic'].has_key('db_sortinghat'):
+    if options['generic'].has_key('db_projects'):
+        dbs.append(options['generic']['db_projects'])
     for dbname in dbs:
         try:
              db = MySQLdb.connect(user = db_user, passwd = db_password,  db = dbname)
@@ -1181,6 +1183,8 @@ def launch_database_dump():
             dbs.append([options['generic']['db_downloads'],'downloads'])
         if options['generic'].has_key('db_pullpo'):
             dbs.append([options['generic']['db_pullpo'],'pullpo'])
+        if options['generic'].has_key('db_projects'):
+            dbs.append([options['generic']['db_projects'],'projects'])
 
         fd = open(msg_body, 'a')
         destination = os.path.join(project_dir,options['db-dump']['destination_db_dump'])

@@ -746,8 +746,9 @@ def launch_sortinghat():
         os.remove(io_file_name)
 
     # Complete main identifier
+    if db_pass1 == '': db_pass1 = "''"
     identifier2sh = identities_dir + '/identifier2sh.py'
-    cmd = identifier2sh + " -d \"%s\" " % (db_name)
+    cmd = identifier2sh + " -u %s -p %s -d \"%s\" " % (db_user, db_pass1, db_name)
     compose_msg(cmd, log_file)
     os.system(cmd)
 

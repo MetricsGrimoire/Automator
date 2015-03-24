@@ -546,13 +546,24 @@ def launch_irc():
         # pre-scripts
         launch_pre_tool_scripts('irc')
 
-        for channel in channels:
-            if not os.path.isdir(os.path.join(irc_dir,channel)): continue
-            launched = True
-            cmd = tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --dir=\"%s\" --channel=\"%s\" --format %s>> %s 2>&1" \
-                        % (db_user, db_pass, db_name, channel, channel, format, log_file)
-            compose_msg(cmd, log_file)
-            os.system(cmd)
+        if format == 'slack':
+            if options['irc'].has_key('token'):
+                token = options['irc']['token']
+                launched = True
+                cmd = tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --token %s --format %s>> %s 2>&1" \
+                            % (db_user, db_pass, db_name, token, format, log_file)
+                compose_msg(cmd, log_file)
+                os.system(cmd)
+            else:
+                logging.error("Slack IRC supports need token option.")
+        else:
+            for channel in channels:
+                if not os.path.isdir(os.path.join(irc_dir,channel)): continue
+                launched = True
+                cmd = tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --dir=\"%s\" --channel=\"%s\" --format %s>> %s 2>&1" \
+                            % (db_user, db_pass, db_name, channel, channel, format, log_file)
+                compose_msg(cmd, log_file)
+                os.system(cmd)
         if launched:
             compose_msg("[OK] irc_analysis executed")
 

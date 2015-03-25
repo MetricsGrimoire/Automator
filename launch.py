@@ -1183,7 +1183,8 @@ def launch_database_dump():
         if options['generic'].has_key('db_gerrit'):
             dbs.append([options['generic']['db_gerrit'],'reviews']);
         if options['generic'].has_key('db_irc'):
-            dbs.append([options['generic']['db_irc'],'irc']);
+            if options['irc']['format'] != 'slack':
+                dbs.append([options['generic']['db_irc'],'irc']);
         if options['generic'].has_key('db_mediawiki'):
             dbs.append([options['generic']['db_mediawiki'],'mediawiki']);
         if options['generic'].has_key('db_releases'):

@@ -24,7 +24,7 @@
 #
 # launch.py
 #
-# This script automates the execution of some of the metrics grimoire 
+# This script automates the execution of some of the metrics grimoire
 # tools (Bicho, MLStats, CVSAnaly). It uses configuration files to get
 # the parameters. Finally it execute R scripts in order to generate the
 # JSON files
@@ -216,7 +216,7 @@ def launch_checkdbs():
         dbs.append(options['generic']['db_bicho'])
     if options['generic'].has_key('db_bicho_1'):
         dbs.append(options['generic']['db_bicho_1'])
-    # mlstats creates the db if options['generic'].has_key('db_mlstats'): 
+    # mlstats creates the db if options['generic'].has_key('db_mlstats'):
     if options['generic'].has_key('db_gerrit'):
         dbs.append(options['generic']['db_gerrit'])
     if options['generic'].has_key('db_irc'):
@@ -653,7 +653,7 @@ def launch_sibyl():
         launched = True
 
         if launched:
-            compose_msg("[OK] sibyl executed")    
+            compose_msg("[OK] sibyl executed")
         else:
             compose_msg("[SKIPPED] sibyl not executed")
     else:
@@ -1130,29 +1130,29 @@ def launch_commit_jsones():
 
         pr = subprocess.Popen(['/usr/bin/git', 'pull'],
                               cwd=os.path.dirname(destination),
-                              stdout=fd, 
-                              stderr=fd, 
+                              stdout=fd,
+                              stderr=fd,
                               shell=False)
         (out, error) = pr.communicate()
 
         pr = subprocess.Popen(['/usr/bin/git', 'add', './*'],
                               cwd=os.path.dirname(destination),
-                              stdout=fd, 
-                              stderr=fd, 
+                              stdout=fd,
+                              stderr=fd,
                               shell=False)
         (out, error) = pr.communicate()
 
         pr = subprocess.Popen(['/usr/bin/git', 'commit', '-m', 'JSON updated by the Owl Bot'],
                               cwd=os.path.dirname(destination),
-                              stdout=fd, 
-                              stderr=fd, 
+                              stdout=fd,
+                              stderr=fd,
                               shell=False)
         (out, error) = pr.communicate()
 
         pr = subprocess.Popen(['/usr/bin/git', 'push', 'origin', 'master'],
                               cwd=os.path.dirname(destination),
-                              stdout=fd, 
-                              stderr=fd, 
+                              stdout=fd,
+                              stderr=fd,
                               shell=False)
         (out, error) = pr.communicate()
 
@@ -1263,8 +1263,8 @@ def launch_rsync():
 
         destination = options['rsync']['destination']
         pr = subprocess.Popen([tools['rsync'],'--rsh', 'ssh', '-zva', '--stats', '--progress', '--update' ,'--delete', production_dir, destination],
-                              stdout=fd, 
-                              stderr=fd, 
+                              stdout=fd,
+                              stderr=fd,
                               shell=False)
         (out, error) = pr.communicate()
 
@@ -1445,8 +1445,17 @@ if __name__ == '__main__':
     opt = get_options()
     initialize_globals(opt.project_dir)
 
+    pid = str(os.getpid())
+    pidfile = os.path.join(opt.project_dir, "launch.pid")
+
+    if os.path.isfile(pidfile):
+        print_std("%s already exists, launch process seems to be running. Exiting .." % pidfile)
+        sys.exit()
+    else:
+        file(pidfile, 'w').write(pid)
+
     reset_log()
-    compose_msg("Starting ..") 
+    compose_msg("Starting ..")
 
     read_main_conf()
 
@@ -1470,3 +1479,5 @@ if __name__ == '__main__':
     project = options['generic']['project']
     mail = options['generic']['mail']
     os.system("mail -s \"[%s] data updated\" %s < %s" % (project, mail, msg_body))
+
+    os.unlink(pidfile)

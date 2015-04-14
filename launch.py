@@ -64,6 +64,7 @@ tools = {
     'sibyl': '/usr/local/bin/sibyl.py',
     'octopus': '/usr/local/bin/octopus',
     'pullpo': '/usr/local/bin/pullpo',
+    'eventizer': '/usr/local/bin/eventizer',
     'r': '/usr/bin/R',
     'git': '/usr/bin/git',
     'svn': '/usr/bin/svn',
@@ -234,6 +235,8 @@ def launch_checkdbs():
         dbs.append(options['generic']['db_downloads'])
     if options['generic'].has_key('db_pullpo'):
         dbs.append(options['generic']['db_pullpo'])
+    if options['generic'].has_key('db_eventizer'):
+        dbs.append(options['generic']['db_eventizer'])
     # sortinghat creates the db itself if options['generic'].has_key('db_sortinghat'):
     if options['generic'].has_key('db_projects'):
         dbs.append(options['generic']['db_projects'])
@@ -408,7 +411,8 @@ def launch_gather():
     from multiprocessing import Process, active_children
 
     gather_tasks_order = ['cvsanaly','bicho','gerrit','mlstats',
-                          'irc','mediawiki', 'downloads', 'sibyl','octopus','pullpo']
+                          'irc','mediawiki', 'downloads', 'sibyl',
+                          'octopus','pullpo','eventizer']
     for section in gather_tasks_order:
         logging.info("Executing %s ...." % (section))
         p = Process(target=tasks_section_gather[section])
@@ -868,6 +872,65 @@ def launch_pullpo():
     else:
         compose_msg("[SKIPPED] pullpo was not executed, no conf available")
 
+def launch_eventizer():
+    # check if eventizer option exists
+    if options.has_key('eventizer'):
+        if not check_tool(tools['eventizer']):
+            return
+
+        compose_msg("eventizer is being executed")
+        launched = False
+        db_user = options['generic']['db_user']
+        db_pass = options['generic']['db_password']
+        db_name = options['generic']['db_eventizer']
+
+        if 'key' not in options['eventizer']:
+            msg = "Metup API key not provided. Use 'key' parameter to set one."
+            logging.error('[eventizer] ' + msg)
+            compose_msg("[SKIPPED] eventizer not executed. %s" % msg)
+            return
+
+        if 'groups' not in options['eventizer']:
+            msg = "Groups list not provided. Use 'groups' parameter to set one."
+            logging.error('[eventizer] ' + msg)
+            compose_msg("[SKIPPED] eventizer not executed. %s" % msg)
+            return
+
+        eventizer_key = options['eventizer']['key']
+
+        groups = options['eventizer']['groups']
+        groups = groups.split(",")
+
+        log_file = project_dir + '/log/launch_eventizer.log'
+
+        # pre-scripts
+        launch_pre_tool_scripts('eventizer')
+
+        # Common pullpo command for all options
+        auth_params = "--key " + eventizer_key
+
+        eventizer_cmd = tools['eventizer'] + " -u \"%s\" -p \"%s\" -d \"%s\" %s " \
+                             %(db_user, db_pass, db_name, auth_params)
+
+        for group in groups:
+            # Launch eventizer for each group
+            group_name = group.strip()
+
+            cmd = eventizer_cmd +  "\"%s\" >> %s 2>&1" % (group_name, log_file)
+            compose_msg(cmd, log_file)
+            os.system(cmd)
+            launched = True
+
+        if launched:
+            compose_msg("[OK] eventizer executed")
+
+            # post-scripts
+            launch_post_tool_scripts('eventizer')
+        else:
+            compose_msg("[SKIPPED] eventizer not executed")
+    else:
+        compose_msg("[SKIPPED] eventizer was not executed, no conf available")
+
 # http://code.activestate.com/recipes/577376-simple-way-to-execute-multiple-process-in-parallel/
 def exec_commands(cmds):
     ''' Exec commands in parallel in multiple process '''
@@ -1197,6 +1260,8 @@ def launch_database_dump():
             dbs.append([options['generic']['db_downloads'],'downloads'])
         if options['generic'].has_key('db_pullpo'):
             dbs.append([options['generic']['db_pullpo'],'pullpo'])
+        if options['generic'].has_key('db_eventizer'):
+            dbs.append([options['generic']['db_eventizer'],'eventizer'])
         if options['generic'].has_key('db_projects'):
             dbs.append([options['generic']['db_projects'],'projects'])
 
@@ -1404,7 +1469,8 @@ tasks_section_gather = {
     'mlstats':launch_mlstats,
     'sibyl': launch_sibyl,
     'octopus': launch_octopus,
-    'pullpo': launch_pullpo
+    'pullpo': launch_pullpo,
+    'eventizer': launch_eventizer
 }
 
 tasks_section = dict({
@@ -1430,7 +1496,7 @@ tasks_section = dict({
 
 # Use this for serial execution of data gathering
 tasks_order_serial = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
-                      'sibyl','octopus','pullpo','sortinghat','events','metrics','copy-json',
+                      'sibyl','octopus','pullpo','eventizer','sortinghat','events','metrics','copy-json',
                       'git-production','db-dump','json-dump','rsync']
 
 # Use this for parallel execution of data gathering

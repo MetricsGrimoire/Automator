@@ -663,37 +663,183 @@ def launch_sibyl():
     else:
         compose_msg("[SKIPPED] sibyl was not executed, no conf available")
 
+
 def launch_octopus():
-    # check if octopusl option exists
-    if options.has_key('octopus'):
+    launch_octopus_puppet()
+    launch_octopus_docker()
+    launch_octopus_github()
+
+
+def launch_octopus_puppet():
+    # check if octopus_puppet option exists
+    if options.has_key('octopus_puppet'):
         if not check_tool(tools['octopus']):
             return
 
-        compose_msg("octopus is being executed")
+        compose_msg("octopus for puppet is being executed")
         launched = False
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
         db_name = options['generic']['db_releases']
-        url = options['octopus']['url']
-        backend = options['octopus']['backend']
-        log_file = project_dir + '/log/launch_octopus.log'
+        url = options['octopus_puppet']['url']
+        log_file = project_dir + '/log/launch_octopus_puppet.log'
 
         # pre-scripts
-        launch_pre_tool_scripts('octopus')
+        launch_pre_tool_scripts('octopus_puppet')
 
-        cmd = tools['octopus'] + " -u \"%s\" -p \"%s\" -d \"%s\" --backend=\"%s\" \"%s\">> %s 2>&1" \
-                      %(db_user, db_pass, db_name,  backend, url, log_file)
+        cmd = tools['octopus'] + " -u \"%s\" -p \"%s\" -d \"%s\" puppet \"%s\">> %s 2>&1" \
+                      %(db_user, db_pass, db_name, url, log_file)
         compose_msg(cmd, log_file)
         os.system(cmd)
         # TODO: it's needed to check if the process correctly finished
         launched = True
 
         if launched:
-            compose_msg("[OK] octopus executed")
+            compose_msg("[OK] octopus for puppet executed")
+
+            launch_post_tool_scripts('octopus_puppet')
         else:
-            compose_msg("[SKIPPED] octopus not executed")
+            compose_msg("[SKIPPED] octopus for puppet not executed")
     else:
-        compose_msg("[SKIPPED] octopus was not executed, no conf available")
+        compose_msg("[SKIPPED] octopus for puppet was not executed, no conf available")
+
+
+def launch_octopus_docker():
+    # check if octopus_docker option exists
+    if options.has_key('octopus_docker'):
+        if not check_tool(tools['octopus']):
+            return
+
+        compose_msg("octopus for docker is being executed")
+        launched = False
+        db_user = options['generic']['db_user']
+        db_pass = options['generic']['db_password']
+        db_name = options['generic']['db_releases']
+        url = options['octopus_docker']['url']
+        log_file = project_dir + '/log/launch_octopus_docker.log'
+
+        owner = options['octopus_docker']['owner']
+        owners = owner.split(",")
+
+        # pre-scripts
+        launch_pre_tool_scripts('octopus_docker')
+
+        octopus_cmd = tools['octopus'] + " -u \"%s\" -p \"%s\" -d \"%s\" docker \"%s\" " \
+            % (db_user, db_pass, db_name, url)
+
+        for owner in owners:
+            owner = owner.strip()
+
+            repositories = None
+
+            if options['octopus_docker'].has_key('repositories') and len(owners) == 1:
+                repositories = options['octopus_docker']['repositories'].split(",")
+            elif options['octopus_docker'].has_key('repositories'):
+                logging.error("Wrong main.conf. Several octopus docker owners and general repositories config.")
+                raise
+
+            if len(owners) > 1:
+                if options['octopus_docker'].has_key('repositories_' + owner.lower()):
+                    repositories = options['octopus_docker']['repositories_' + owner.lower()].split(",")
+
+            if repositories:
+                # Launch octopus for each docker repository configured
+                for repo in repositories:
+                    repo = repo.strip()
+                    cmd = octopus_cmd +  "\"%s\"  \"%s\">> %s 2>&1" % (owner, repo, log_file)
+                    compose_msg(cmd, log_file)
+                    os.system(cmd)
+            else:
+                logging.error("No repositories configured for %s docker owner. Skipped" % owner)
+
+        launched = True
+
+        if launched:
+            compose_msg("[OK] octopus for docker executed")
+
+            launch_post_tool_scripts('octopus_docker')
+        else:
+            compose_msg("[SKIPPED] octopus for docker not executed")
+    else:
+        compose_msg("[SKIPPED] octopus for docker was not executed, no conf available")
+
+
+def launch_octopus_github():
+    # check if octopus_github option exists
+    if options.has_key('octopus_github'):
+        if not check_tool(tools['octopus']):
+            return
+
+        compose_msg("octopus for github is being executed")
+        launched = False
+        db_user = options['generic']['db_user']
+        db_pass = options['generic']['db_password']
+        db_name = options['generic']['db_releases']
+        log_file = project_dir + '/log/launch_octopus_github.log'
+
+        owner = options['octopus_github']['owner']
+        owners = owner.split(",")
+
+        if options['octopus_github'].has_key('oauth_key'):
+            oauth_key = options['octopus_github']['oauth_key']
+        else:
+            user = options['octopus_github']['user']
+            password = options['octopus_github']['password']
+
+        url = ""
+        if options['octopus_github'].has_key('url'):
+            url = "--gh-url " + options['octopus']['url']
+
+        # Common octopus command for all options
+        if options['octopus_github'].has_key('oauth_key'):
+            auth_params = "--gh-token " + oauth_key
+        else:
+            auth_params = "--gh-user=\""+user+"\" --gh-password=\""+password+"\""
+
+        octopus_cmd = tools['octopus'] + " -u \"%s\" -p \"%s\" -d \"%s\" github %s %s " \
+            %(db_user, db_pass, db_name, auth_params , url)
+
+        # pre-scripts
+        launch_pre_tool_scripts('octopus_github')
+
+        for owner in owners:
+            owner = owner.strip()
+
+            repositories = None
+
+            if options['octopus_github'].has_key('repositories') and len(owners) == 1:
+                repositories = options['octopus_github']['repositories'].split(",")
+            elif options['octopus_github'].has_key('repositories'):
+                logging.error("Wrong main.conf. Several octopus github owners and general repositories config.")
+                raise
+
+            if len(owners) > 1:
+                if options['octopus_github'].has_key('repositories_' + owner.lower()):
+                    repositories = options['octopus_github']['repositories_' + owner.lower()].split(",")
+
+            if repositories:
+                # Launch octopus for each docker repository configured
+                for repo in repositories:
+                    repo = repo.strip()
+                    cmd = octopus_cmd +  "\"%s\"  \"%s\">> %s 2>&1" % (owner, repo, log_file)
+                    compose_msg(cmd, log_file)
+                    os.system(cmd)
+            else:
+                # Launch octopus for all the repositories
+                cmd = octopus_cmd + "\"%s\"  >> %s 2>&1" % (owner, log_file)
+                compose_msg(cmd, log_file)
+                os.system(cmd)
+
+        launched = True
+
+        if launched:
+            compose_msg("[OK] octopus for github executed")
+
+            launch_post_tool_scripts('octopus_github')
+        else:
+            compose_msg("[SKIPPED] octopus for github not executed")
+    else:
+        compose_msg("[SKIPPED] octopus for github was not executed, no conf available")
 
 
 def check_sortinghat_db(db_user, db_pass, db_name):
@@ -850,8 +996,8 @@ def launch_pullpo():
                 logging.error("Wrong main.conf. Several pullpo owners and general projects config.")
                 raise
             if len(owners) > 1:
-                if options['pullpo'].has_key('projects_' + owner):
-                    projects = options['pullpo']['projects_' + owner].split(",")
+                if options['pullpo'].has_key('projects_' + owner.lower()):
+                    projects = options['pullpo']['projects_' + owner.lower()].split(",")
             if projects:
                 # Launch pullpo for each project configured
                 for project in projects:

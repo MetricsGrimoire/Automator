@@ -899,7 +899,7 @@ def launch_sortinghat():
                       %(db_user, db_pass, db_ds, project_name.lower(), ds.get_name(), io_file_name, log_file)
         compose_msg(cmd, log_file)
         os.system(cmd)
-        # Load identities in sortinghat
+        # Load identities in sortinghat in incremental mode
         cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" load --matching email-name -n %s >> %s 2>&1" \
                       %(db_user, db_pass, db_name, io_file_name, log_file)
         compose_msg(cmd, log_file)

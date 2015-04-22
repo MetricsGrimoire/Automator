@@ -1392,7 +1392,10 @@ def launch_database_dump():
         if options['generic'].has_key('db_gerrit'):
             dbs.append([options['generic']['db_gerrit'],'reviews']);
         if options['generic'].has_key('db_irc'):
-            if options['irc']['format'] != 'slack':
+            if options['irc'].has_key('format'):
+                if options['irc']['format'] != 'slack':
+                    dbs.append([options['generic']['db_irc'],'irc']);
+            else:
                 dbs.append([options['generic']['db_irc'],'irc']);
         if options['generic'].has_key('db_mediawiki'):
             dbs.append([options['generic']['db_mediawiki'],'mediawiki']);

@@ -351,11 +351,14 @@ def do_bicho(section = None):
         delay = options[section]['delay']
         backend = options[section]['backend']
         backend_user = backend_password = None
+        backend_token = None
         num_issues_query = None
         if options[section].has_key('backend_user'):
             backend_user = options[section]['backend_user']
         if options[section].has_key('backend_password'):
             backend_password = options[section]['backend_password']
+        if options[section].has_key('backend_token'):
+            backend_token = options[section]['backend_token']
         if options[section].has_key('num-issues-query'):
             num_issues_query = options[section]['num-issues-query']
         trackers = options[section]['trackers']
@@ -386,10 +389,16 @@ def do_bicho(section = None):
                 flags = flags + " -l"
 
             user_opt = ''
-            if backend_user and backend_password:
+
+            # Authentication parameters
+            if backend_token:
+                user_opt = '--backend-token=%s' % (backend_token)
+            elif backend_user and backend_password:
                 user_opt = '--backend-user=%s --backend-password=%s' % (backend_user, backend_password)
+
             if num_issues_query:
-                user_opt = '--num-issues=%s' % (num_issues_query)
+                user_opt = user_opt + ' --num-issues=%s' % (num_issues_query)
+
             cmd = tools['its'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s %s -u %s %s >> %s 2>&1" \
                         % (db_user, db_pass, database, str(delay), backend, user_opt, t, flags, log_file)
             compose_msg(cmd, log_file)

@@ -182,8 +182,8 @@ def update_scm(dir = scm_dir):
     for r in repos:
         os.chdir(r)
         if os.path.isdir(os.path.join(dir,r,".git")):
-            os.system("git fetch origin >> %s 2>&1" %(log_file))
-            os.system("git reset --hard origin/master >> %s 2>&1" %(log_file))
+            os.system("GIT_ASKPASS=echo git fetch origin >> %s 2>&1" %(log_file))
+            os.system("GIT_ASKPASS=echo git reset --hard origin/master >> %s 2>&1" %(log_file))
         elif os.path.isdir(os.path.join(dir,r,".svn")):
             os.system("svn update >> %s 2>&1" %(log_file))
         else: compose_msg(r + " not git nor svn.", log_file)

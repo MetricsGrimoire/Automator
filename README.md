@@ -353,17 +353,25 @@ For each data source, you'll need to have the tool installed in your system. Aft
 python launch.py --dir <PATH_TO_PROJECT_DIR> -s <tool>
 ```
 
-So let's say we already have installed the tools and configured the main.conf to analyze JIRA (bicho). So to retrieve all, we just need to generate the databases listed in the `generic` section (just once):
+So let's say we already have installed the tools and configured the main.conf to analyze JIRA (bicho). So to retrieve all, we just need to generate the databases listed in the `generic` section (just once).
+
+NOTE: for sortinghat, before launching `check-dbs` option, we should initialize a database doing:
 
 ```
-python launch.py -d /test/project-jira/ -s check_dbs
+sortinghat init <db_name>
+```
+
+Then create the rest of them:
+
+```
+python launch.py -d /test/project-jira/ -s check-dbs
 ```
 and then launch:
 
 ```
 python launch.py -d /test/project-jira/ -s bicho
 ```
-NOTE: for sortinghat, before launching `check_dbs` option, we should initialize a database doing:
+NOTE: for sortinghat, before launching `check-dbs` option, we should initialize a database doing:
 
 ```
 sortinghat init <db_name>

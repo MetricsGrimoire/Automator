@@ -22,6 +22,7 @@ For database population:
 * Octopus >= latest
 * pullpo >= latest
 * MediaWikiAnalysis >= 0.3 or latest
+* Eventizer >= latest
 
 For database analysis and data visualization:
 * GrimoireLib >= 15.04 or latest
@@ -296,9 +297,18 @@ projects_<org_2> = <list_of_projects>
 Octopus is a tool to retrieve information, which is publicly available on the Internet, about free software projects.
 
 ```
-[octopus]
-backend = <add_here_your_backend>    // Select your backend. Available backends: ('github','docker','puppet')
+[octopus_<backend>]                  // Available backends: ('github','docker','puppet')   
 url = <add_here_the_URL>             // Add here the complete URL of your backend
+```
+
+### **Eventizer**
+
+Eventizer is a python tool created by Bitergia to retrieve information from Meetup groups. It store the data in a MySQL database.
+
+```
+[eventizer]
+key = <api-key>                      // Add here your meetup API key
+groups = <list-of-groups>            // Add here the list of groups you would like to analyze
 ```
 
 ### CVSAnalY 
@@ -401,13 +411,19 @@ python launch.py -d <PATH_TO_PROJECT_DIR> -s metrics -t scm
 ```
 
 Supported metrics: 
-* `scm`
-* `its`
-* `mls` 
-* `scr`
-* `pullpo` 
-* `mediawiki`
-* `qaforums`
+
+| Metric | Retrieved with |
+|--------| ---------------|
+| `scm` | CVSAnalY |
+| `its` | Bicho |
+| `irc` | IRCAnalysis |
+| `mls` | MailingListStats |
+| `scr` | Bicho (gerrit) |
+| `pullpo` | pullpo |
+| `mediawiki` | MediaWikiAnalysis |
+| `qaforums` | Sibyl |
+| `releases` | Octopus |
+| `eventizer` | Eventizer |
 
 ## <a name="dashboard_conf"/> 5. Configure the dashboard
 

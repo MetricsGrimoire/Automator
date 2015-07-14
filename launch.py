@@ -77,6 +77,15 @@ tools = {
     'sh2mg': '/usr/local/bin/sh2mg',
 }
 
+# Config files where lists of repositories are found.
+# It is expected to find a repository per line
+BICHO_TRACKERS = "bicho_trackers.conf"
+BICHO_1_TRACKERS = "bicho_1_trackers.conf"
+CVSANALY_REPOSITORIES = "cvsanaly_repositories.conf"
+GERRIT_PROJECTS = "gerrit_trackers.conf"
+MLSTATS_MAILING_LISTS = "mlstats_mailing_lists.conf"
+
+
 def get_options():
     parser = OptionParser(usage='Usage: %prog [options]',
                           description='Update data, process it and obtain JSON files',
@@ -153,6 +162,21 @@ def read_main_conf():
                 options[s][o] = parser.get(s,o)
 
     return options
+
+def repositories(file_path):
+   """ Returns the list of repositories found in file_path
+
+   :param file_patch: file where the repositories are found
+   :returns: a list of repositories
+   """
+
+   global conf_dir
+
+   file_path  = os.path.join(conf_dir, file_path)
+   print file_path
+   repositories = open(file_path).read().splitlines()
+
+   return repositories
 
 # git specific: search all repos in a directory recursively
 def get_scm_repos(dir = scm_dir):
@@ -361,7 +385,13 @@ def do_bicho(section = None):
             backend_token = options[section]['backend_token']
         if options[section].has_key('num-issues-query'):
             num_issues_query = options[section]['num-issues-query']
-        trackers = options[section]['trackers']
+        # Retrieving trackers from config file or from an external config file
+        if options[section].has_key('trackers'):
+            trackers = options[section]['trackers']
+        else:
+            trackers = repositories(BICHO_TRACKERS)
+        if section == "bicho_1" and not options[section].has_key('trackers'):
+            trackers = repositories(BICHO_1_TRACKERS)
         log_table = None
         debug = options[section]['debug']
         if options[section].has_key('log_table'):
@@ -451,7 +481,11 @@ def launch_gerrit():
         delay = options['gerrit']['delay']
         backend = options['gerrit']['backend']
         trackers = options['gerrit']['trackers']
-        projects = options['gerrit']['projects']
+        # Retrieving projects
+        if options['gerrit'].has_key('projects'):
+            projects = options['gerrit']['projects']
+        else:
+             projects = repositories(GERRIT_PROJECTS)
         debug = options['gerrit']['debug']
         log_table = None
         if options['gerrit'].has_key('log_table'):
@@ -509,7 +543,11 @@ def launch_mlstats():
         db_user = db_admin_user
         db_pass = options['generic']['db_password']
         db_name = options['generic']['db_mlstats']
-        mlists = options['mlstats']['mailing_lists']
+        # Retrieving mailing lists
+        if options['mlstats'].has_key('mailing_lists'):
+            mlists = options['mlstats']['mailing_lists'].split(",")
+        else:
+            mlists = repositories(MLSTATS_MAILING_LISTS)
 
         force = ''
         if options['mlstats'].has_key('force'):
@@ -521,7 +559,7 @@ def launch_mlstats():
         # pre-scripts
         launch_pre_tool_scripts('mlstats')
 
-        for m in mlists.split(","):
+        for m in mlists:
             launched = True
             cmd = tools['mls'] + " %s --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"%s\" \"%s\" >> %s 2>&1" \
                         %(force, db_user, db_pass, db_name, db_admin_user, db_pass, m, log_file)

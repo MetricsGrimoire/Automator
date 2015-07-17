@@ -225,6 +225,9 @@ MLStats is a tool to parse and analyze mail boxes into a database.
 # Add there the complete URL(s) and/or path of your mailing lists ARCHIVE (divided by commas and no whitespaces)
 mailing_lists = <include_here_your_mailing_lists>
 ```
+IMPORTANT: Not the URL(s) of your mailing lists, the URL(s) of your mailing lists ARCHIVES.
+WRONG-URL: https://lists.libresoft.es/listinfo/metrics-grimoire
+CORRECT-URL: https://lists.libresoft.es/pipermail/metrics-grimoire/
 
 ### **IRC**
 

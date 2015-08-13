@@ -715,6 +715,7 @@ def launch_octopus():
     launch_octopus_puppet()
     launch_octopus_docker()
     launch_octopus_github()
+    launch_octopus_gerrit()
 
 
 def launch_octopus_puppet():
@@ -887,6 +888,44 @@ def launch_octopus_github():
             compose_msg("[SKIPPED] octopus for github not executed")
     else:
         compose_msg("[SKIPPED] octopus for github was not executed, no conf available")
+
+
+def launch_octopus_gerrit():
+    """ Octopus Gerrit backend """
+
+    launched = False
+    if options.has_key('octopus_gerrit'):
+        if not check_tool(tools['octopus']):
+            return
+
+        compose_msg("octopus for gerrit is being executed")
+        # Common options
+        db_user = options['generic']['db_user']
+        db_pass = options['generic']['db_password']
+        db_name = options['generic']['db_octopus']
+        log_file = project_dir + '/log/launch_octopus_gerrit.log'
+
+        # Gerrit specific options
+        gerrit_user = options['octopus_gerrit']['gerrit_user']
+        gerrit_url = options['octopus_gerrit']['gerrit_url']
+
+        octopus_cmd = tools['octopus'] + " -u \"%s\" -p \"%s\" -d \"%s\" gerrit --gerrit-user \"%s\" --gerrit-url \"%s\" " \
+                      % (db_user, db_pass, db_name, gerrit_user, gerrit_url)
+
+        # pre-scripts
+        launch_pre_tool_scripts('octopus_gerrit')
+
+        # Execute Octopus Gerrit backend
+        compose_msg(octopus_cmd, log_file)
+        os.system(octopus_cmd)
+
+        launched = True
+        compose_msg("[OK] octopus for gerrit executed")
+        # post-scripts
+        launch_post_tool_scripts('octopus_gerrit')
+
+    if not launched:
+        compose_msg("[SKIPPED] octopus for gerrit not executed")
 
 
 def check_sortinghat_db(db_user, db_pass, db_name):

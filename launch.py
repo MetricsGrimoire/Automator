@@ -84,6 +84,8 @@ BICHO_1_TRACKERS = "bicho_1_trackers.conf"
 CVSANALY_REPOSITORIES = "cvsanaly_repositories.conf"
 GERRIT_PROJECTS = "gerrit_trackers.conf"
 MLSTATS_MAILING_LISTS = "mlstats_mailing_lists.conf"
+PUPPET_RELEASES = "puppet_releases.conf"
+DOCKER_PACKAGES = "docker_packages.conf"
 
 
 def get_options():
@@ -718,6 +720,23 @@ def launch_octopus():
     launch_octopus_gerrit()
 
 
+def launch_octopus_export(cmd, backend):
+    """ Exports the list of repositories to the specific config file"""
+
+    # Adding the '--export' option, this disable the rest of the Octopus options
+    cmd = cmd + ' --export '
+
+    if backend == 'puppet':
+        output = PUPPET_RELEASES
+    elif backend == 'docker':
+        output = DOCKER_PACKAGES
+    elif backend == 'github':
+        output = CVSANALY_REPOSITORIES
+    elif backend == 'gerrit':
+        output = GERRIT_PROJECTS
+
+    os.system(cmd + " > " + conf_dir + output)
+
 def launch_octopus_puppet():
     # check if octopus_puppet option exists
     if options.has_key('octopus_puppet'):
@@ -737,10 +756,17 @@ def launch_octopus_puppet():
 
         cmd = tools['octopus'] + " -u \"%s\" -p \"%s\" -d \"%s\" puppet \"%s\">> %s 2>&1" \
                       %(db_user, db_pass, db_name, url, log_file)
+        export_cmd = tools['octopus'] + " -u \"%s\" -p \"%s\" -d \"%s\" puppet \"%s\" "\
+                      %(db_user, db_pass, db_name, url, log_file)
+
         compose_msg(cmd, log_file)
         os.system(cmd)
         # TODO: it's needed to check if the process correctly finished
         launched = True
+
+        # Export data if required
+        if options['octopus_puppet'].has_key('export'):
+            launch_octopus_export(export_cmd, 'puppet')
 
         if launched:
             compose_msg("[OK] octopus for puppet executed")
@@ -774,6 +800,7 @@ def launch_octopus_docker():
 
         octopus_cmd = tools['octopus'] + " -u \"%s\" -p \"%s\" -d \"%s\" docker \"%s\" " \
             % (db_user, db_pass, db_name, url)
+        export_cmd = octopus_cmd
 
         for owner in owners:
             owner = owner.strip()
@@ -799,6 +826,10 @@ def launch_octopus_docker():
                     os.system(cmd)
             else:
                 logging.error("No repositories configured for %s docker owner. Skipped" % owner)
+
+        # Export data if required
+        if options['octopus_docker'].has_key('export'):
+            launch_octopus_export(export_cmd, 'docker')
 
         launched = True
 
@@ -846,6 +877,7 @@ def launch_octopus_github():
 
         octopus_cmd = tools['octopus'] + " -u \"%s\" -p \"%s\" -d \"%s\" github %s %s " \
             %(db_user, db_pass, db_name, auth_params , url)
+        export_cmd = octopus_cmd
 
         # pre-scripts
         launch_pre_tool_scripts('octopus_github')
@@ -877,6 +909,10 @@ def launch_octopus_github():
                 cmd = octopus_cmd + "\"%s\"  >> %s 2>&1" % (owner, log_file)
                 compose_msg(cmd, log_file)
                 os.system(cmd)
+
+        # Export data if required
+        if options['octopus_github'].has_key('export'):
+            launch_octopus_export(export_cmd, 'github')
 
         launched = True
 
@@ -911,6 +947,7 @@ def launch_octopus_gerrit():
 
         octopus_cmd = tools['octopus'] + " -u \"%s\" -p \"%s\" -d \"%s\" gerrit --gerrit-user \"%s\" --gerrit-url \"%s\" " \
                       % (db_user, db_pass, db_name, gerrit_user, gerrit_url)
+        export_cmd = octopus_cmd
 
         # pre-scripts
         launch_pre_tool_scripts('octopus_gerrit')
@@ -923,6 +960,10 @@ def launch_octopus_gerrit():
         compose_msg("[OK] octopus for gerrit executed")
         # post-scripts
         launch_post_tool_scripts('octopus_gerrit')
+
+        # Export data if required
+        if options['octopus_gerrit'].has_key('export'):
+            launch_octopus_export(export_cmd, 'gerrit')
 
     if not launched:
         compose_msg("[SKIPPED] octopus for gerrit not executed")

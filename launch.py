@@ -1606,7 +1606,7 @@ def launch_rsync():
         fd = open(msg_body, 'a')
 
         destination = options['rsync']['destination']
-        pr = subprocess.Popen([tools['rsync'],'--rsh', 'ssh', '-zva', '--stats', '--progress', '--update' ,'--delete', production_dir, destination],
+        pr = subprocess.Popen([tools['rsync'],'--rsh', 'ssh', '-zva', '--stats', '--progress', '--update' ,'--delete', '--exclude', '.git', production_dir, destination],
                               stdout=fd,
                               stderr=fd,
                               shell=False)

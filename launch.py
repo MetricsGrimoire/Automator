@@ -266,6 +266,9 @@ def launch_checkdbs():
     # sortinghat creates the db itself if options['generic'].has_key('db_sortinghat'):
     if options['generic'].has_key('db_projects'):
         dbs.append(options['generic']['db_projects'])
+    # Octopus db
+    if options['generic'].has_key('db_octopus'):
+        dbs.append(options['generic']['db_octopus'])
     for dbname in dbs:
         try:
              db = MySQLdb.connect(user = db_user, passwd = db_password,  db = dbname)

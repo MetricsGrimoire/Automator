@@ -209,7 +209,11 @@ def update_scm(dir = scm_dir):
         os.chdir(r)
         if os.path.isdir(os.path.join(dir,r,".git")):
             os.system("GIT_ASKPASS=echo git fetch origin >> %s 2>&1" %(log_file))
-            os.system("GIT_ASKPASS=echo git reset --hard origin/master >> %s 2>&1" %(log_file))
+            errcode = os.system("GIT_ASKPASS=echo git reset --hard origin/master -- >> %s 2>&1" %(log_file))
+
+            if errcode != 0:
+                # Sometimes master branch does not exists and it's replaced by trunk
+                os.system("GIT_ASKPASS=echo git reset --hard origin/trunk -- >> %s 2>&1" %(log_file))
         elif os.path.isdir(os.path.join(dir,r,".svn")):
             os.system("svn update >> %s 2>&1" %(log_file))
         else: compose_msg(r + " not git nor svn.", log_file)

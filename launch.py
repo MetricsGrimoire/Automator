@@ -66,6 +66,7 @@ tools = {
     'pullpo': '/usr/local/bin/pullpo',
     'eventizer': '/usr/local/bin/eventizer',
     'r': '/usr/bin/R',
+    'rremoval': '/usr/local/bin/rremoval',
     'git': '/usr/bin/git',
     'svn': '/usr/bin/svn',
     'mysqldump': '/usr/bin/mysqldump',
@@ -80,10 +81,15 @@ tools = {
 # Config files where lists of repositories are found.
 # It is expected to find a repository per line
 BICHO_TRACKERS = "bicho_trackers.conf"
+BICHO_TRACKERS_BLACKLIST = "bicho_trackers_blacklist.conf"
 BICHO_1_TRACKERS = "bicho_1_trackers.conf"
+BICHO_1_TRACKERS_BLACKLIST = "bicho_1_trackers_blacklist.conf"
 CVSANALY_REPOSITORIES = "cvsanaly_repositories.conf"
+CVSANALY_REPOSITORIES_BLACKLIST = "cvsanaly_repositories_blacklist.conf"
 GERRIT_PROJECTS = "gerrit_trackers.conf"
+GERRIT_PROJECTS_BLACKLIST = "gerrit_trackers_blacklist.conf"
 MLSTATS_MAILING_LISTS = "mlstats_mailing_lists.conf"
+MLSTATS_MAILING_LISTS_BLACKLIST = "mlstats_mailing_lists_blacklist.conf"
 PUPPET_RELEASES = "puppet_releases.conf"
 DOCKER_PACKAGES = "docker_packages.conf"
 
@@ -489,8 +495,50 @@ def launch_gerrit():
         # Retrieving projects
         if options['gerrit'].has_key('projects'):
             projects = options['gerrit']['projects']
+            projects = [str(trackers[0]) + "_" + project.replace('"', '') for project in projects]
         else:
-             projects = repositories(GERRIT_PROJECTS)
+            all_projects = repositories(GERRIT_PROJECTS)
+            # Open repositories to be removed
+            projects_blacklist = repositories(GERRIT_PROJECTS_BLACKLIST)
+            projects = [project for project in all_projects if project not in projects_blacklist ]
+            # Using format from Bicho database to manage Gerrit URLs
+            projects = [trackers + "_" + project for project in projects]
+            projects_blacklist = [trackers + "_" + project for project in projects_blacklist]
+            # Removing blacklist projects
+            for project in projects_blacklist:
+                break
+                # Remove not found projects.
+                # WARNING: if a repository name is different from the one in the database
+                # list of repositories, this piece of code may remove all
+                # of the repositories in the database.
+                # An example would be how Gerrit returns the name of the projects, while
+                # Bicho stores such information in URL format.
+                proc = subprocess.Popen([tools['rremoval'], "-u", db_user, "-p", db_pass,
+                                         "-d", database, "-b", "bicho", "-r", project],
+                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # Removing those projects that are found in the database, but not in
+        # the list of projects.
+        proc = subprocess.Popen([tools['rremoval'], "-u", db_user, "-p", db_pass,
+                                 "-d", database, "-b", "bicho", "-l"],
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process_output = proc.communicate()
+        db_projects = eval(process_output[0])
+        to_remove_projects = [project for project in db_projects if project not in projects]
+        compose_msg("Removing the following projects from the database")
+        compose_msg(to_remove_projects)
+        for project in to_remove_projects:
+            compose_msg("Removing %s" % (project))
+            # Remove not found projects.
+            # WARNING: if a repository name is different from the one in the database
+            # list of repositories, this piece of code may remove all
+            # of the repositories in the database.
+            # An example would be how Gerrit returns the name of the projects, while
+            # Bicho stores such information in URL format.
+            proc = subprocess.Popen([tools['rremoval'], "-u", db_user, "-p", db_pass,
+                                     "-d", database, "-b", "bicho", "-r", project],
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
         debug = options['gerrit']['debug']
         log_table = None
         if options['gerrit'].has_key('log_table'):

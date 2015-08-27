@@ -496,21 +496,32 @@ def launch_gerrit():
         delay = options['gerrit']['delay']
         backend = options['gerrit']['backend']
         trackers = options['gerrit']['trackers']
+
+        # Retrieving projects from database
+        proc = subprocess.Popen([tools['rremoval'], "-u", db_user, "-p", db_pass,
+                                 "-d", database, "-b", "bicho", "-l"],
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process_output = proc.communicate()
+        db_projects = eval(process_output[0])
+
         # Retrieving projects
         if options['gerrit'].has_key('projects'):
             projects = options['gerrit']['projects']
             projects = [str(trackers[0]) + "_" + project.replace('"', '') for project in projects]
         else:
             all_projects = repositories(GERRIT_PROJECTS)
-            # Open repositories to be removed
+            # Open repositories to be analyzed
             projects_blacklist = repositories(GERRIT_PROJECTS_BLACKLIST)
             projects = [project for project in all_projects if project not in projects_blacklist ]
             # Using format from Bicho database to manage Gerrit URLs
-            projects = [trackers + "_" + project for project in projects]
-            projects_blacklist = [trackers + "_" + project for project in projects_blacklist]
-            # Removing blacklist projects
+            projects = [str(trackers[0]) + "_" + project for project in projects]
+            projects_blacklist = [str(trackers[0]) + "_" + project for project in projects_blacklist]
+
+            # Removing blacklist projects if they are found in the database
+            projects_blacklist = [project for project in projects_blacklist if project in db_projects]
+            compose_msg("Removing the following projects found in the blacklist and in the database")
             for project in projects_blacklist:
-                break
+                compose_msg("Removing from blacklist %s " % (project))
                 # Remove not found projects.
                 # WARNING: if a repository name is different from the one in the database
                 # list of repositories, this piece of code may remove all
@@ -520,17 +531,12 @@ def launch_gerrit():
                 proc = subprocess.Popen([tools['rremoval'], "-u", db_user, "-p", db_pass,
                                          "-d", database, "-b", "bicho", "-r", project],
                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                process_output = proc.communicate()
 
         # Removing those projects that are found in the database, but not in
         # the list of projects.
-        proc = subprocess.Popen([tools['rremoval'], "-u", db_user, "-p", db_pass,
-                                 "-d", database, "-b", "bicho", "-l"],
-                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        process_output = proc.communicate()
-        db_projects = eval(process_output[0])
         to_remove_projects = [project for project in db_projects if project not in projects]
-        compose_msg("Removing the following projects from the database")
-        compose_msg(to_remove_projects)
+        compose_msg("Removing the following deprecated projects from the database")
         for project in to_remove_projects:
             compose_msg("Removing %s" % (project))
             # Remove not found projects.
@@ -561,6 +567,8 @@ def launch_gerrit():
         cont = 0
         last = len(projects)
 
+        # Re-formating the projects name
+        projects = [project.replace(str(trackers[0]) + "_", "") for project in projects]
         for project in projects:
             launched = True
             cont = cont + 1

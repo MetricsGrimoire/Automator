@@ -480,6 +480,20 @@ def launch_gather():
         else:
             time.sleep(0.5)
 
+def remove_gerrit_repositories(repositories, db_user, db_pass, database):
+    for project in repositories:
+        compose_msg("Removing %s " % (project))
+        # Remove not found projects.
+        # WARNING: if a repository name is different from the one in the database
+        # list of repositories, this piece of code may remove all
+        # of the repositories in the database.
+        # An example would be how Gerrit returns the name of the projects, while
+        # Bicho stores such information in URL format.
+        proc = subprocess.Popen([tools['rremoval'], "-u", db_user, "-p", db_pass,
+                                "-d", database, "-b", "bicho", "-r", project],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process_output = proc.communicate()
+
 def launch_gerrit():
     # reads a conf file with all of the information and launches bicho
     if options.has_key('gerrit'):
@@ -520,34 +534,21 @@ def launch_gerrit():
             # Removing blacklist projects if they are found in the database
             projects_blacklist = [project for project in projects_blacklist if project in db_projects]
             compose_msg("Removing the following projects found in the blacklist and in the database")
-            for project in projects_blacklist:
-                compose_msg("Removing from blacklist %s " % (project))
-                # Remove not found projects.
-                # WARNING: if a repository name is different from the one in the database
-                # list of repositories, this piece of code may remove all
-                # of the repositories in the database.
-                # An example would be how Gerrit returns the name of the projects, while
-                # Bicho stores such information in URL format.
-                proc = subprocess.Popen([tools['rremoval'], "-u", db_user, "-p", db_pass,
-                                         "-d", database, "-b", "bicho", "-r", project],
-                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                process_output = proc.communicate()
+            # Checking if more than a 5% of the total list is going to be removed.
+            # If so, a warning message is raised and no project is removed.
+            if len(projects) == 0 or float(len(projects_blacklist))/float(len(projects)) > 0.05:
+                compose_msg("WARNING: More than a 5% of the total number of projects is required to be removed. No action.")
+            else:
+                remove_gerrit_repositories(projects_blacklist, db_user, db_pass, database)
 
         # Removing those projects that are found in the database, but not in
         # the list of projects.
         to_remove_projects = [project for project in db_projects if project not in projects]
         compose_msg("Removing the following deprecated projects from the database")
-        for project in to_remove_projects:
-            compose_msg("Removing %s" % (project))
-            # Remove not found projects.
-            # WARNING: if a repository name is different from the one in the database
-            # list of repositories, this piece of code may remove all
-            # of the repositories in the database.
-            # An example would be how Gerrit returns the name of the projects, while
-            # Bicho stores such information in URL format.
-            proc = subprocess.Popen([tools['rremoval'], "-u", db_user, "-p", db_pass,
-                                     "-d", database, "-b", "bicho", "-r", project],
-                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if len(projects) == 0 or float(len(to_remove_projects)) / float(len(projects)) >= 0.05:
+            compose_msg("WARNING: More than a 5% of the total number of projects is required to be removed. No action.")
+        else:
+            remove_gerrit_repositories(to_remove_projects, db_user, db_pass, database)
 
         debug = options['gerrit']['debug']
         log_table = None

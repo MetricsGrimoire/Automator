@@ -129,6 +129,7 @@ def initialize_globals(pdir):
     global conf_dir
     global downs_dir
     global json_dir
+    global repos_dir
     global scripts_dir
     global production_dir
     global identities_dir
@@ -142,6 +143,7 @@ def initialize_globals(pdir):
     conf_dir = project_dir + '/conf/'
     downs_dir = project_dir + '/downloads/'
     json_dir = project_dir + '/json/'
+    repos_dir = conf_dir + "repositories/"
     scripts_dir = project_dir + '/scripts/'
     production_dir = project_dir + '/production/'
     identities_dir = project_dir + '/tools/VizGrimoireUtils/identities/'
@@ -523,9 +525,9 @@ def launch_gerrit():
             projects = options['gerrit']['projects']
             projects = [str(trackers[0]) + "_" + project.replace('"', '') for project in projects]
         else:
-            all_projects = repositories(GERRIT_PROJECTS)
+            all_projects = repositories(repos_dir + GERRIT_PROJECTS)
             # Open repositories to be analyzed
-            projects_blacklist = repositories(GERRIT_PROJECTS_BLACKLIST)
+            projects_blacklist = repositories(repos_dir + GERRIT_PROJECTS_BLACKLIST)
             projects = [project for project in all_projects if project not in projects_blacklist ]
             # Using format from Bicho database to manage Gerrit URLs
             projects = [str(trackers[0]) + "_" + project for project in projects]
@@ -777,8 +779,49 @@ def launch_sibyl():
     else:
         compose_msg("[SKIPPED] sibyl was not executed, no conf available")
 
+def pull_directory(path):
+
+    pr = subprocess.Popen(['/usr/bin/git', 'fetch origin'],
+                          cwd=os.path.dirname(path),
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,
+                          shell=False)
+    (out, error) = pr.communicate()
+
+
+    pr = subprocess.Popen(['/usr/bin/git', 'fetch reset --hard origin/master -- '],
+                          cwd=os.path.dirname(path),
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,
+                          shell=False)
+    (out, error) = pr.communicate()
+
+def push_directory(path):
+
+    pr = subprocess.Popen(['/usr/bin/git', 'add', './*'],
+                          cwd=os.path.dirname(path),
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,
+                          shell=False)
+    (out, error) = pr.communicate()
+
+    pr = subprocess.Popen(['/usr/bin/git', 'commit', '-m', 'Updated by the Owl Bot'],
+                          cwd=os.path.dirname(path),
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,
+                          shell=False)
+    (out, error) = pr.communicate()
+
+    pr = subprocess.Popen(['/usr/bin/git', 'push', 'origin', 'master'],
+                          cwd=os.path.dirname(path),
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,
+                          shell=False)
+    (out, error) = pr.communicate()
+
 
 def launch_octopus():
+
     launch_octopus_puppet()
     launch_octopus_docker()
     launch_octopus_github()
@@ -788,7 +831,7 @@ def launch_octopus():
 def launch_octopus_export(cmd, backend):
     """ Exports the list of repositories to the specific config file"""
 
-    # Adding the '--export' option, this disable the rest of the Octopus options
+    # Adding the '--export' option, this disables the rest of the Octopus options
     cmd = cmd + ' --export '
 
     if backend == 'puppet':
@@ -800,7 +843,17 @@ def launch_octopus_export(cmd, backend):
     elif backend == 'gerrit':
         output = GERRIT_PROJECTS
 
-    os.system(cmd + " > " + conf_dir + output)
+    if not os.path.isdir(repos_dir):
+        compose_msg("WARNING: '" + repos_dir + "' does not exist")
+
+    if os.path.isdir(repos_dir):
+        # This tries to fetch and push new data when exporting octopus info
+        pull_directory(repos_dir)
+    os.system(cmd + " > " + repos_dir + output)
+
+    if os.path.isdir(repos_dir):
+        # This tries to push new changes in the file
+        push_directory(repos_dir)
 
 def launch_octopus_puppet():
     # check if octopus_puppet option exists

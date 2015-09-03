@@ -3,7 +3,7 @@
 #
 # This script parses IRC logs and stores the extracted data in
 # a database
-# 
+#
 # Copyright (C) 2014 Bitergia
 #
 # This program is free software; you can redistribute it and/or modify
@@ -144,13 +144,13 @@ def create_project_dirs(name, output_dir):
     """Create Automator project directories."""
 
     logging.info("Creating project: " + name)
-    if not os.path.exists(output_dir): 
+    if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     project_dir = os.path.join(output_dir,name)
-    if not os.path.exists(project_dir): 
+    if not os.path.exists(project_dir):
         os.makedirs(project_dir)
 
-    basic_dirs = ["conf","irc","json","log","production","scm","scripts","tools"]
+    basic_dirs = ["conf","irc","json","log","production","scm","scripts","tools","backups"]
 
     for dir in basic_dirs:
         new_dir = os.path.join(project_dir,dir)
@@ -172,23 +172,6 @@ def safe_git_clone(git_repo, dir_repo = ""):
     if return_code == 1:
         logging.error("Error in " + " ".join(cmd))
         sys.exit()
-
-def config_r(tools_dir):
-    # Configure R environment
-    cmd = ["R", "CMD", "INSTALL", "-l",
-           os.path.join(tools_dir,"r-lib"),
-           os.path.join(tools_dir,"VizGrimoireUtils","grimoirelibR")]
-    r_lib_dir = os.path.join(tools_dir, "r-lib")
-    if not os.path.exists(r_lib_dir):
-        os.makedirs(r_lib_dir)
-    return_code = call(cmd)
-    if return_code == 1:
-        logging.error("Error in " + " ".join(cmd))
-        sys.exit()
-    # Legacy dir
-    legacy_link = os.path.join(tools_dir,"VizGrimoireR")
-    if not os.path.islink(legacy_link):
-        os.symlink("GrimoireLib", legacy_link)
 
 def config_viz(tools_dir):
     data_dir = os.path.join(tools_dir,"VizGrimoireJS",
@@ -221,7 +204,6 @@ def download_tools (project_name, output_dir):
         dir_repo = os.path.join(tools_dir, git)
         safe_git_clone(gits[git], dir_repo)
 
-    config_r(tools_dir)
     config_viz(tools_dir)
 
 def download_gits (git_repos, dir_project):
@@ -392,7 +374,7 @@ def get_config_sibyl(project_data):
     ]
     return vars
 
-def get_config_r(project_data):
+def get_config_grimoirelib(project_data):
     vars = [
             ["start_date","2010-01-01"],
             ["# end_date","2014-03-20"],
@@ -458,7 +440,7 @@ def create_project_config(name, project_data, output_dir):
                 ["irc",get_config_irc],
                 ["mediawiki",get_config_mediawiki],
                 ["sibyl",get_config_sibyl],
-                ["r",get_config_r],
+                ["r",get_config_grimoirelib],
                 ["identities",get_config_identities],
                 ["git-production_OFF",get_config_git_production],
                 ["db-dump",get_config_db_dump],
@@ -798,7 +780,7 @@ def create_projects_json(destdir, name):
     # JSON entry
     #"mylyn.tasks": {
     #    "parent_project": "mylyn",
-    #    "title": "Mylyn Tasks" 
+    #    "title": "Mylyn Tasks"
     # }
     # In the current implementation just one leve, all "parent_project":"root"
     q = "SELECT id, title from projects"

@@ -1121,6 +1121,12 @@ def launch_sortinghat():
     # pre-scripts
     launch_pre_tool_scripts('sortinghat')
 
+    # Import data from a master repo, if it's set
+    success = False
+
+    if 'master' in options['sortinghat']:
+        success = restore_sortinghat_master()
+
     # For each data source export identities and load them in sortinghat
     report = get_report_module()
     dss = report.get_data_sources()
@@ -1193,10 +1199,106 @@ def launch_sortinghat():
     compose_msg(cmd, log_file)
     os.system(cmd)
 
+    if 'master' in options['sortinghat'] and success:
+        upload_sortinghat_master()
+
     # post-scripts
     launch_post_tool_scripts('sortinghat')
 
     logging.info("Sortinghat done")
+
+
+def restore_sortinghat_master():
+    db_user = options['generic']['db_user']
+    db_pass = options['generic']['db_password']
+    db_name = options['generic']['db_sortinghat']
+    log_file = project_dir + '/log/launch_sortinghat.log'
+
+    master_dir = project_dir + '/sortinghat/'
+    sh_master =  master_dir + options['sortinghat']['master']
+
+    # Update master repository
+    pull_directory(master_dir)
+
+    # Export sh information to a file
+    ts = dt.datetime.now()
+    ts = str(ts.date())
+    backup_file = project_dir + '/backups/sh_' + ts + '.json'
+
+    code = export_sortinghat(db_user, db_pass, db_name, backup_file, log_file)
+
+    if code != 0:
+        logging.info("Error making a Sorting Hat backup.")
+        return False
+    else:
+        logging.info("Sorting Hat backup dumped to %s" % (backup_file))
+
+    # Drop database
+    db = MySQLdb.connect(user=db_user, passwd=db_pass)
+    cursor = db.cursor()
+    query = "DROP DATABASE " + db_name
+    cursor.execute(query)
+    db.close()
+
+    # Create the new database
+    check_sortinghat_db(db_user, db_pass, db_name)
+
+    # Import data from master file
+    code = import_sortinghat(db_user, db_pass, db_name, sh_master, log_file)
+
+    if code != 0:
+        logging.info("Error importing Sorting Hat data from master file %s." % sh_master)
+        logging.info("Restoring old data")
+
+        code = import_sortinghat(db_user, db_pass, db_name, backup_file, log_file)
+
+        if code != 0:
+            msg = "Fatal error restoring Sorting Hat backup"
+            logging.info(msg)
+            raise Exception(msg)
+        else:
+            logging.info("Backup restored.")
+            logging.info("New Sorting Hat info will not updated on master file.")
+            return False
+    else:
+        logging.info("Data from master file imported into Sorting Hat")
+
+    return True
+
+
+def upload_sortinghat_master():
+    db_user = options['generic']['db_user']
+    db_pass = options['generic']['db_password']
+    db_name = options['generic']['db_sortinghat']
+    log_file = project_dir + '/log/launch_sortinghat.log'
+
+    master_dir = project_dir + '/sorthinghat/'
+    sh_master =  master_dir + options['sortinghat']['master']
+
+    export_sortinghat(db_user, db_pass, db_name, sh_master, log_file)
+
+    code = push_directory(master_dir)
+
+
+def import_sortinghat(db_user, db_pass, db_name, io_file_name, log_file):
+    cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" load -n %s >> %s 2>&1" \
+            % (db_user, db_pass, db_name, io_file_name, log_file)
+    compose_msg(cmd, log_file)
+
+    retcode = os.system(cmd)
+
+    return retcode
+
+
+def export_sortinghat(db_user, db_pass, db_name, io_file_name, log_file):
+    cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" export --identities %s >> %s 2>&1" \
+            % (db_user, db_pass, db_name, io_file_name, log_file)
+    compose_msg(cmd, log_file)
+
+    retcode = os.system(cmd)
+
+    return retcode
+
 
 def launch_pullpo():
     # check if octopusl option exists

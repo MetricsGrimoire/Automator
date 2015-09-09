@@ -1272,7 +1272,7 @@ def upload_sortinghat_master():
     db_name = options['generic']['db_sortinghat']
     log_file = project_dir + '/log/launch_sortinghat.log'
 
-    master_dir = project_dir + '/sorthinghat/'
+    master_dir = project_dir + '/sortinghat/'
     sh_master =  master_dir + options['sortinghat']['master']
 
     export_sortinghat(db_user, db_pass, db_name, sh_master, log_file)

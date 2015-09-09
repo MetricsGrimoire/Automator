@@ -781,7 +781,7 @@ def launch_sibyl():
 
 def pull_directory(path):
 
-    pr = subprocess.Popen(['/usr/bin/git', 'fetch origin'],
+    pr = subprocess.Popen(['/usr/bin/git', 'fetch', 'origin'],
                           cwd=os.path.dirname(path),
                           stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE,
@@ -789,7 +789,7 @@ def pull_directory(path):
     (out, error) = pr.communicate()
 
 
-    pr = subprocess.Popen(['/usr/bin/git', 'fetch reset --hard origin/master -- '],
+    pr = subprocess.Popen(['/usr/bin/git', 'reset', '--hard', 'origin/master', '--'],
                           cwd=os.path.dirname(path),
                           stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE,

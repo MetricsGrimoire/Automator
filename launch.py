@@ -1281,7 +1281,7 @@ def upload_sortinghat_master():
 
 
 def import_sortinghat(db_user, db_pass, db_name, io_file_name, log_file):
-    cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" load -n %s >> %s 2>&1" \
+    cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" load %s >> %s 2>&1" \
             % (db_user, db_pass, db_name, io_file_name, log_file)
     compose_msg(cmd, log_file)
 

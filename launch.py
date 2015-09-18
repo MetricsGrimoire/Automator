@@ -30,6 +30,7 @@
 # JSON files
 
 import logging
+import logging.handlers
 import os
 import subprocess
 import sys
@@ -45,6 +46,12 @@ import MySQLdb
 
 # conf variables from file(see read_main_conf)
 options = {}
+
+# global var for logs
+main_log = None
+MAX_LOG_BYTES = '10000000' #10MB
+MAX_LOG_FILES = '5' #6 files (.log, .log.1, ... , .log.5)
+log_files = None
 
 # global var for directories
 project_dir = ''
@@ -136,6 +143,8 @@ def initialize_globals(pdir):
     global downloads_dir
     global r_dir
 
+    global log_files
+
     project_dir = pdir
     msg_body = project_dir + '/log/launch.log'
     scm_dir = project_dir + '/scm/'
@@ -149,6 +158,25 @@ def initialize_globals(pdir):
     identities_dir = project_dir + '/tools/VizGrimoireUtils/identities/'
     downloads_dir = project_dir + '/tools/VizGrimoireUtils/downloads/'
     r_dir = project_dir + '/tools/GrimoireLib/vizGrimoireJS/'
+
+    # global var for logs
+    log_files = {
+        'cvsanaly' : project_dir + '/log/launch_cvsanaly.log',
+        'bicho' : project_dir + '/log/launch_bicho.log',
+        'gerrit' : project_dir + '/log/launch_gerrit.log',
+        'mlstats' : project_dir + '/log/launch_mlstats.log',
+        'irc' : project_dir + '/log/launch_irc.log',
+        'mediawiki' : project_dir + '/log/launch_mediawiki.log',
+        'sibyl' : project_dir + '/log/launch_sibyl.log',
+        'octopus_puppet' : project_dir + '/log/launch_octopus_puppet.log',
+        'octopus_docker' : project_dir + '/log/launch_octopus_docker.log',
+        'octopus_github' : project_dir + '/log/launch_octopus_github.log',
+        'sortinghat_affiliations' : project_dir + '/log/launch_sortinghat_affiliations.log',
+        'sortinghat' : project_dir + '/log/launch_sortinghat.log',
+        'pullpo' : project_dir + '/log/launch_pullpo.log',
+        'eventizer' : project_dir + '/log/launch_eventizer.log',
+        'identities' : project_dir + '/log/launch_identities.log',
+    }
 
 def read_main_conf():
     parser = SafeConfigParser()
@@ -207,11 +235,11 @@ def get_scm_repos(dir = scm_dir):
             all_repos.append(sub_repo)
     return all_repos
 
-def update_scm(dir = scm_dir):
-    compose_msg("SCM is being updated")
+def update_scm(scm_log, dir = scm_dir):
+    main_log.info("SCM is being updated")
     repos = get_scm_repos()
     updated = False
-    log_file = project_dir + '/log/launch_cvsanaly.log'
+    log_file = log_files['cvsanaly']
 
     for r in repos:
         os.chdir(r)
@@ -224,10 +252,10 @@ def update_scm(dir = scm_dir):
                 os.system("GIT_ASKPASS=echo git reset --hard origin/trunk -- >> %s 2>&1" %(log_file))
         elif os.path.isdir(os.path.join(dir,r,".svn")):
             os.system("svn update >> %s 2>&1" %(log_file))
-        else: compose_msg(r + " not git nor svn.", log_file)
-        compose_msg(r + " update ended", log_file)
+        else: scm_log.info(r + " not git nor svn.")
+        scm_log.info(r + " update ended")
 
-    if updated: compose_msg("[OK] SCM updated")
+    if updated: main_log.info("[OK] SCM updated")
 
 def check_tool(cmd):
     return os.path.isfile(cmd) and os.access(cmd, os.X_OK)
@@ -237,7 +265,7 @@ def check_tools():
     tools_ok = True
     for tool in tools:
         if not check_tool(tools[tool]):
-            compose_msg(tools[tool]+" not found or not executable.")
+            main_log.info(tools[tool]+" not found or not executable.")
             print (tools[tool]+" not found or not executable.")
             tools_ok = False
     if not tools_ok: print ("Missing tools. Some reports could not be created.")
@@ -299,45 +327,48 @@ def launch_scripts(scripts):
     for script in scripts:
         cmd = os.path.join(scripts_dir, script) + " >> %s 2>&1" % msg_body
 
-        compose_msg("Running %s" % cmd)
+        main_log.info("Running %s" % cmd)
         os.system(cmd)
-        compose_msg("%s script completed" % script)
+        main_log.info("%s script completed" % script)
 
 def launch_pre_tool_scripts(tool):
     if tool not in options:
         return
 
     if options[tool].has_key('pre_scripts'):
-        compose_msg("Running %s pre scripts" % tool)
+        main_log.info("Running %s pre scripts" % tool)
         launch_scripts(options[tool]['pre_scripts'])
-        compose_msg("%s pre scripts completed" % tool)
+        main_log.info("%s pre scripts completed" % tool)
     else:
-        compose_msg("No %s pre scripts configured" % tool)
+        main_log.info("No %s pre scripts configured" % tool)
 
 def launch_post_tool_scripts(tool):
     if tool not in options:
         return
 
     if options[tool].has_key('post_scripts'):
-        compose_msg("Running %s post scripts" % tool)
+        main_log.info("Running %s post scripts" % tool)
         launch_scripts(options[tool]['post_scripts'])
-        compose_msg("%s post scripts completed" % tool)
+        main_log.info("%s post scripts completed" % tool)
     else:
-        compose_msg("No %s post scripts configured" % tool)
+        main_log.info("No %s post scripts configured" % tool)
 
 def launch_cvsanaly():
+        
+    log_file = log_files['cvsanaly']
+    cvsanaly_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
+
     # using the conf executes cvsanaly for the repos inside scm dir
     if options.has_key('cvsanaly'):
         if not check_tool(tools['scm']):
             return
-        update_scm()
-        compose_msg("cvsanaly is being executed")
+        update_scm(cvsanaly_log)
+        main_log.info("cvsanaly is being executed")
         launched = False
         db_name = options['generic']['db_cvsanaly']
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
         if (db_pass == ""): db_pass = "''"
-        log_file = project_dir + '/log/launch_cvsanaly.log'
 
 
         # we launch cvsanaly against the repos
@@ -356,18 +387,18 @@ def launch_cvsanaly():
                 cmd = tools['scm'] + " -u %s -p %s -d %s >> %s 2>&1" \
                         %(db_user, db_pass, db_name, log_file)
 
-            compose_msg(cmd, log_file)
+            cvsanaly_log.info(cmd)
             os.system(cmd)
 
         if launched:
-            compose_msg("[OK] cvsanaly executed")
+            main_log.info("[OK] cvsanaly executed")
 
             # post-scripts
             launch_post_tool_scripts('cvsanaly')
         else:
-            compose_msg("[SKIPPED] cvsanaly was not executed")
+            main_log.info("[SKIPPED] cvsanaly was not executed")
     else:
-        compose_msg("[SKIPPED] cvsanaly not executed, no conf available")
+        main_log.info("[SKIPPED] cvsanaly not executed, no conf available")
 
 def launch_bicho(section = None):
     do_bicho('bicho')
@@ -383,7 +414,7 @@ def do_bicho(section = None):
         if not check_tool(tools['its']):
             return
 
-        compose_msg("bicho is being executed")
+        main_log.info("bicho is being executed")
         launched = False
 
         database = options['generic']['db_' + section]
@@ -413,7 +444,8 @@ def do_bicho(section = None):
         debug = options[section]['debug']
         if options[section].has_key('log_table'):
             log_table = options[section]['log_table']
-        log_file = project_dir + '/log/launch_bicho.log'
+        log_file = log_files['bicho']
+        bicho_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
 
 
         # we compose some flags
@@ -448,17 +480,17 @@ def do_bicho(section = None):
 
             cmd = tools['its'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s %s -u %s %s >> %s 2>&1" \
                         % (db_user, db_pass, database, str(delay), backend, user_opt, t, flags, log_file)
-            compose_msg(cmd, log_file)
+            bicho_log.info(cmd)
             os.system(cmd)
         if launched:
-            compose_msg("[OK] bicho executed")
+            main_log.info("[OK] bicho executed")
 
             # post-scripts
             launch_post_tool_scripts(section)
         else:
-            compose_msg("[SKIPPED] bicho was not executed")
+            main_log.info("[SKIPPED] bicho was not executed")
     else:
-        compose_msg("[SKIPPED] bicho not executed, no conf available for " + section)
+        main_log.info("[SKIPPED] bicho not executed, no conf available for " + section)
 
 def launch_gather():
     """ This tasks will execute in parallel all data gathering tasks """
@@ -484,7 +516,7 @@ def launch_gather():
 
 def remove_gerrit_repositories(repositories, db_user, db_pass, database):
     for project in repositories:
-        compose_msg("Removing %s " % (project))
+        main_log.info("Removing %s " % (project))
         # Remove not found projects.
         # WARNING: if a repository name is different from the one in the database
         # list of repositories, this piece of code may remove all
@@ -503,7 +535,7 @@ def launch_gerrit():
         if not check_tool(tools['scr']):
             return
 
-        compose_msg("bicho (gerrit) is being executed")
+        main_log.info("bicho (gerrit) is being executed")
         launched = False
 
         database = options['generic']['db_gerrit']
@@ -535,20 +567,20 @@ def launch_gerrit():
 
             # Removing blacklist projects if they are found in the database
             projects_blacklist = [project for project in projects_blacklist if project in db_projects]
-            compose_msg("Removing the following projects found in the blacklist and in the database")
+            main_log.info("Removing the following projects found in the blacklist and in the database")
             # Checking if more than a 5% of the total list is going to be removed.
             # If so, a warning message is raised and no project is removed.
             if len(projects) == 0 or float(len(projects_blacklist))/float(len(projects)) > 0.05:
-                compose_msg("WARNING: More than a 5% of the total number of projects is required to be removed. No action.")
+                main_log.info("WARNING: More than a 5% of the total number of projects is required to be removed. No action.")
             else:
                 remove_gerrit_repositories(projects_blacklist, db_user, db_pass, database)
 
         # Removing those projects that are found in the database, but not in
         # the list of projects.
         to_remove_projects = [project for project in db_projects if project not in projects]
-        compose_msg("Removing the following deprecated projects from the database")
+        main_log.info("Removing the following deprecated projects from the database")
         if len(projects) == 0 or float(len(to_remove_projects)) / float(len(projects)) >= 0.05:
-            compose_msg("WARNING: More than a 5% of the total number of projects is required to be removed. No action.")
+            main_log.info("WARNING: More than a 5% of the total number of projects is required to be removed. No action.")
         else:
             remove_gerrit_repositories(to_remove_projects, db_user, db_pass, database)
 
@@ -556,7 +588,8 @@ def launch_gerrit():
         log_table = None
         if options['gerrit'].has_key('log_table'):
             log_table = options['gerrit']['log_table']
-        log_file = project_dir + '/log/launch_gerrit.log'
+        log_file = log_files['gerrit']
+        gerrit_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
 
 
         flags = ""
@@ -584,19 +617,19 @@ def launch_gerrit():
                 g_user = '--backend-user ' + options['gerrit']['user']
             cmd = tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s %s -u %s --gerrit-project=%s %s >> %s 2>&1" \
                             % (db_user, db_pass, database, str(delay), backend, g_user, trackers[0], project, flags, log_file)
-            compose_msg(cmd, log_file)
+            gerrit_log.info(cmd)
             os.system(cmd)
 
 
         if launched:
-            compose_msg("[OK] bicho (gerrit) executed")
+            main_log.info("[OK] bicho (gerrit) executed")
 
             # post-scripts
             launch_post_tool_scripts('gerrit')
         else:
-            compose_msg("[SKIPPED] bicho (gerrit) not executed")
+            main_log.info("[SKIPPED] bicho (gerrit) not executed")
     else:
-        compose_msg("[SKIPPED] bicho (gerrit) not executed, no conf available")
+        main_log.info("[SKIPPED] bicho (gerrit) not executed, no conf available")
 
 
 
@@ -605,7 +638,7 @@ def launch_mlstats():
         if not check_tool(tools['mls']):
             return
 
-        compose_msg("mlstats is being executed")
+        main_log.info("mlstats is being executed")
         launched = False
         db_admin_user = options['generic']['db_user']
         db_user = db_admin_user
@@ -622,7 +655,8 @@ def launch_mlstats():
         if options['mlstats'].has_key('force'):
             if options['mlstats']['force'] is True:
                 force = '--force'
-        log_file = project_dir + '/log/launch_mlstats.log'
+        log_file = log_files['mlstats']
+        mlstats_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
 
 
         # pre-scripts
@@ -632,24 +666,24 @@ def launch_mlstats():
             launched = True
             cmd = tools['mls'] + " %s --no-report --db-user=\"%s\" --db-password=\"%s\" --db-name=\"%s\" --db-admin-user=\"%s\" --db-admin-password=\"%s\" \"%s\" >> %s 2>&1" \
                         %(force, db_user, db_pass, db_name, db_admin_user, db_pass, m, log_file)
-            compose_msg(cmd, log_file)
+            mlstats_log.info(cmd)
             os.system(cmd)
         if launched:
-            compose_msg("[OK] mlstats executed")
+            main_log.info("[OK] mlstats executed")
 
             # post-scripts
             launch_post_tool_scripts('mlstats')
         else:
-            compose_msg("[SKIPPED] mlstats not executed")
+            main_log.info("[SKIPPED] mlstats not executed")
     else:
-        compose_msg("[SKIPPED] mlstats was not executed, no conf available")
+        main_log.info("[SKIPPED] mlstats was not executed, no conf available")
 
 def launch_irc():
     if options.has_key('irc'):
         if not check_tool(tools['irc']):
             return
 
-        compose_msg("irc_analysis is being executed")
+        main_log.info("irc_analysis is being executed")
         launched = False
         db_admin_user = options['generic']['db_user']
         db_user = db_admin_user
@@ -660,7 +694,8 @@ def launch_irc():
             format = options['irc']['format']
         channels = os.listdir(irc_dir)
         os.chdir(irc_dir)
-        log_file = project_dir + '/log/launch_irc.log'
+        log_file = log_files['irc']
+        irc_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
 
 
         # pre-scripts
@@ -672,7 +707,7 @@ def launch_irc():
                 launched = True
                 cmd = tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --token %s --format %s>> %s 2>&1" \
                             % (db_user, db_pass, db_name, token, format, log_file)
-                compose_msg(cmd, log_file)
+                irc_log.info(cmd)
                 os.system(cmd)
             else:
                 logging.error("Slack IRC supports need token option.")
@@ -682,31 +717,32 @@ def launch_irc():
                 launched = True
                 cmd = tools['irc'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --dir=\"%s\" --channel=\"%s\" --format %s>> %s 2>&1" \
                             % (db_user, db_pass, db_name, channel, channel, format, log_file)
-                compose_msg(cmd, log_file)
+                irc_log.info(cmd)
                 os.system(cmd)
         if launched:
-            compose_msg("[OK] irc_analysis executed")
+            main_log.info("[OK] irc_analysis executed")
 
             # post-scripts
             launch_post_tool_scripts('irc')
         else:
-            compose_msg("[SKIPPED] irc_analysis not executed")
+            main_log.info("[SKIPPED] irc_analysis not executed")
     else:
-        compose_msg("[SKIPPED] irc_analysis was not executed, no conf available")
+        main_log.info("[SKIPPED] irc_analysis was not executed, no conf available")
 
 def launch_mediawiki():
     if options.has_key('mediawiki'):
         if not check_tool(tools['mediawiki']):
             return
 
-        compose_msg("mediawiki_analysis is being executed")
+        main_log.info("mediawiki_analysis is being executed")
         launched = False
         db_admin_user = options['generic']['db_user']
         db_user = db_admin_user
         db_pass = options['generic']['db_password']
         db_name = options['generic']['db_mediawiki']
         sites = options['mediawiki']['sites']
-        log_file = project_dir + '/log/launch_mediawiki.log'
+        log_file = log_files['mediawiki']
+        mediawiki_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
 
 
         # pre-scripts
@@ -717,22 +753,22 @@ def launch_mediawiki():
             # ./mediawiki_analysis.py --database acs_mediawiki_rdo_2478 --db-user root --url http://openstack.redhat.com
             cmd = tools['mediawiki'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --url=\"%s\" >> %s 2>&1" \
                       %(db_user, db_pass, db_name,  sites, log_file)
-            compose_msg(cmd, log_file)
+            mediawiki_log.info(cmd)
             os.system(cmd)
         if launched:
-            compose_msg("[OK] mediawiki_analysis executed")
+            main_log.info("[OK] mediawiki_analysis executed")
 
             # post-scripts
             launch_post_tool_scripts('mediawiki')
         else:
-            compose_msg("[SKIPPED] mediawiki_analysis not executed")
+            main_log.info("[SKIPPED] mediawiki_analysis not executed")
     else:
-        compose_msg("[SKIPPED] mediawiki_analysis was not executed, no conf available")
+        main_log.info("[SKIPPED] mediawiki_analysis was not executed, no conf available")
 
 def launch_downloads():
     # check if downloads option exists. If it does, downloads are executed
     if options.has_key('downloads'):
-        compose_msg("downloads does not execute any tool. Only pre and post scripts")
+        main_log.info("downloads does not execute any tool. Only pre and post scripts")
 
         # pre-scripts
         launch_pre_tool_scripts('downloads')
@@ -747,7 +783,7 @@ def launch_sibyl():
         if not options['sibyl'].has_key('url'):
             return
 
-        compose_msg("sibyl is being executed")
+        main_log.info("sibyl is being executed")
         launched = False
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
@@ -760,24 +796,25 @@ def launch_sibyl():
             api_key = " -k \"" +  options['sibyl']['api_key'] + "\""
         if 'tags' in options['sibyl']:
             tags = " --tags \"" + options['sibyl']['tags'] + "\""
-        log_file = project_dir + '/log/launch_sibyl.log'
+        log_file = log_files['sibyl']
+        sibyl_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
 
         # pre-scripts
         launch_pre_tool_scripts('sibyl')
 
         cmd = tools['sibyl'] + " --db-user=\"%s\" --db-password=\"%s\" --database=\"%s\" --url=\"%s\" --type=\"%s\" %s %s >> %s 2>&1" \
                       %(db_user, db_pass, db_name,  url, backend, api_key, tags, log_file)
-        compose_msg(cmd, log_file)
+        sibyl_log.info(cmd)
         os.system(cmd)
         # TODO: it's needed to check if the process correctly finished
         launched = True
 
         if launched:
-            compose_msg("[OK] sibyl executed")
+            main_log.info("[OK] sibyl executed")
         else:
-            compose_msg("[SKIPPED] sibyl not executed")
+            main_log.info("[SKIPPED] sibyl not executed")
     else:
-        compose_msg("[SKIPPED] sibyl was not executed, no conf available")
+        main_log.info("[SKIPPED] sibyl was not executed, no conf available")
 
 def pull_directory(path):
 
@@ -844,7 +881,7 @@ def launch_octopus_export(cmd, backend):
         output = GERRIT_PROJECTS
 
     if not os.path.isdir(repos_dir):
-        compose_msg("WARNING: '" + repos_dir + "' does not exist")
+        main_log.info("WARNING: '" + repos_dir + "' does not exist")
 
     if os.path.isdir(repos_dir):
         # This tries to fetch and push new data when exporting octopus info
@@ -861,13 +898,14 @@ def launch_octopus_puppet():
         if not check_tool(tools['octopus']):
             return
 
-        compose_msg("octopus for puppet is being executed")
+        main_log.info("octopus for puppet is being executed")
         launched = False
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
         db_name = options['generic']['db_releases']
         url = options['octopus_puppet']['url']
-        log_file = project_dir + '/log/launch_octopus_puppet.log'
+        log_file = log_files['octopus_puppet']
+        octopus_puppet_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
 
         # pre-scripts
         launch_pre_tool_scripts('octopus_puppet')
@@ -877,7 +915,7 @@ def launch_octopus_puppet():
         export_cmd = tools['octopus'] + " -u \"%s\" -p \"%s\" -d \"%s\" puppet \"%s\" "\
                       %(db_user, db_pass, db_name, url, log_file)
 
-        compose_msg(cmd, log_file)
+        octopus_puppet_log.info(cmd)
         os.system(cmd)
         # TODO: it's needed to check if the process correctly finished
         launched = True
@@ -887,13 +925,13 @@ def launch_octopus_puppet():
             launch_octopus_export(export_cmd, 'puppet')
 
         if launched:
-            compose_msg("[OK] octopus for puppet executed")
+            main_log.info("[OK] octopus for puppet executed")
 
             launch_post_tool_scripts('octopus_puppet')
         else:
-            compose_msg("[SKIPPED] octopus for puppet not executed")
+            main_log.info("[SKIPPED] octopus for puppet not executed")
     else:
-        compose_msg("[SKIPPED] octopus for puppet was not executed, no conf available")
+        main_log.info("[SKIPPED] octopus for puppet was not executed, no conf available")
 
 
 def launch_octopus_docker():
@@ -902,13 +940,14 @@ def launch_octopus_docker():
         if not check_tool(tools['octopus']):
             return
 
-        compose_msg("octopus for docker is being executed")
+        main_log.info("octopus for docker is being executed")
         launched = False
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
         db_name = options['generic']['db_releases']
         url = options['octopus_docker']['url']
-        log_file = project_dir + '/log/launch_octopus_docker.log'
+        log_file = log_files['octopus_docker']
+        octopus_docker_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
 
         owner = options['octopus_docker']['owner']
         owners = owner.split(",")
@@ -940,7 +979,7 @@ def launch_octopus_docker():
                 for repo in repositories:
                     repo = repo.strip()
                     cmd = octopus_cmd +  "\"%s\"  \"%s\">> %s 2>&1" % (owner, repo, log_file)
-                    compose_msg(cmd, log_file)
+                    octopus_docker_log.info(cmd)
                     os.system(cmd)
             else:
                 logging.error("No repositories configured for %s docker owner. Skipped" % owner)
@@ -952,13 +991,13 @@ def launch_octopus_docker():
         launched = True
 
         if launched:
-            compose_msg("[OK] octopus for docker executed")
+            main_log.info("[OK] octopus for docker executed")
 
             launch_post_tool_scripts('octopus_docker')
         else:
-            compose_msg("[SKIPPED] octopus for docker not executed")
+            main_log.info("[SKIPPED] octopus for docker not executed")
     else:
-        compose_msg("[SKIPPED] octopus for docker was not executed, no conf available")
+        main_log.info("[SKIPPED] octopus for docker was not executed, no conf available")
 
 
 def launch_octopus_github():
@@ -967,12 +1006,13 @@ def launch_octopus_github():
         if not check_tool(tools['octopus']):
             return
 
-        compose_msg("octopus for github is being executed")
+        main_log.info("octopus for github is being executed")
         launched = False
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
         db_name = options['generic']['db_releases']
-        log_file = project_dir + '/log/launch_octopus_github.log'
+        log_file = log_files['octopus_github']
+        octopus_github_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
 
         owner = options['octopus_github']['owner']
         owners = owner.split(",")
@@ -1020,12 +1060,12 @@ def launch_octopus_github():
                 for repo in repositories:
                     repo = repo.strip()
                     cmd = octopus_cmd +  "\"%s\"  \"%s\">> %s 2>&1" % (owner, repo, log_file)
-                    compose_msg(cmd, log_file)
+                    octopus_github_log.info(cmd)
                     os.system(cmd)
             else:
                 # Launch octopus for all the repositories
                 cmd = octopus_cmd + "\"%s\"  >> %s 2>&1" % (owner, log_file)
-                compose_msg(cmd, log_file)
+                octopus_github_log.info(cmd)
                 os.system(cmd)
 
         # Export data if required
@@ -1035,13 +1075,13 @@ def launch_octopus_github():
         launched = True
 
         if launched:
-            compose_msg("[OK] octopus for github executed")
+            main_log.info("[OK] octopus for github executed")
 
             launch_post_tool_scripts('octopus_github')
         else:
-            compose_msg("[SKIPPED] octopus for github not executed")
+            main_log.info("[SKIPPED] octopus for github not executed")
     else:
-        compose_msg("[SKIPPED] octopus for github was not executed, no conf available")
+        main_log.info("[SKIPPED] octopus for github was not executed, no conf available")
 
 
 def launch_octopus_gerrit():
@@ -1052,12 +1092,13 @@ def launch_octopus_gerrit():
         if not check_tool(tools['octopus']):
             return
 
-        compose_msg("octopus for gerrit is being executed")
+        main_log.info("octopus for gerrit is being executed")
         # Common options
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
         db_name = options['generic']['db_octopus']
-        log_file = project_dir + '/log/launch_octopus_gerrit.log'
+        log_file = log_files['octopus_gerrit']
+        octopus_gerrit_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
 
         # Gerrit specific options
         gerrit_user = options['octopus_gerrit']['gerrit_user']
@@ -1071,11 +1112,11 @@ def launch_octopus_gerrit():
         launch_pre_tool_scripts('octopus_gerrit')
 
         # Execute Octopus Gerrit backend
-        compose_msg(octopus_cmd, log_file)
+        octopus_gerrit_log.info(octopus_cmd)
         os.system(octopus_cmd)
 
         launched = True
-        compose_msg("[OK] octopus for gerrit executed")
+        main_log.info("[OK] octopus for gerrit executed")
         # post-scripts
         launch_post_tool_scripts('octopus_gerrit')
 
@@ -1084,12 +1125,13 @@ def launch_octopus_gerrit():
             launch_octopus_export(export_cmd, 'gerrit')
 
     if not launched:
-        compose_msg("[SKIPPED] octopus for gerrit not executed")
+        main_log.info("[SKIPPED] octopus for gerrit not executed")
 
 
 def check_sortinghat_db(db_user, db_pass, db_name):
     """ Check that the db exists and if not, create it """
-    log_file = project_dir + '/log/launch_sortinghat_affiliations.log'
+    log_file = log_files['sortinghat_affiliations']
+    sortinghat_affiliations_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
     try:
          db = MySQLdb.connect(user = db_user, passwd = db_pass,  db = db_name)
          db.close()
@@ -1099,7 +1141,7 @@ def check_sortinghat_db(db_user, db_pass, db_name):
         print ("Creating sortinghat database ...")
         cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" init \"%s\">> %s 2>&1" \
                       %(db_user, db_pass, db_name, log_file)
-        compose_msg(cmd, log_file)
+        sortinghat_affiliations_log.info(cmd)
         os.system(cmd)
 
 def launch_sortinghat():
@@ -1114,7 +1156,8 @@ def launch_sortinghat():
     db_user = options['generic']['db_user']
     db_pass = options['generic']['db_password']
     db_name = options['generic']['db_sortinghat']
-    log_file = project_dir + '/log/launch_sortinghat.log'
+    log_file = log_files['sortinghat']
+    sortinghat_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
 
     check_sortinghat_db(db_user, db_pass, db_name)
 
@@ -1125,7 +1168,7 @@ def launch_sortinghat():
     success = False
 
     if 'master' in options['sortinghat']:
-        success = restore_sortinghat_master()
+        success = restore_sortinghat_master(sortinghat_log)
 
     # For each data source export identities and load them in sortinghat
     report = get_report_module()
@@ -1148,12 +1191,12 @@ def launch_sortinghat():
         # Export identities from ds
         cmd = tools['mg2sh'] + " -u \"%s\" -p \"%s\" -d \"%s\" --source \"%s:%s\" -o %s >> %s 2>&1" \
                       %(db_user, db_pass, db_ds, project_name.lower(), ds.get_name(), io_file_name, log_file)
-        compose_msg(cmd, log_file)
+        sortinghat_log.info(cmd)
         os.system(cmd)
         # Load identities in sortinghat in incremental mode
         cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" load --matching email-name -n %s >> %s 2>&1" \
                       %(db_user, db_pass, db_name, io_file_name, log_file)
-        compose_msg(cmd, log_file)
+        sortinghat_log.info(cmd)
         os.system(cmd)
         os.remove(io_file_name)
 
@@ -1162,13 +1205,13 @@ def launch_sortinghat():
     if db_pass_id == '': db_pass_id = "''"
     identifier2sh = identities_dir + '/identifier2sh.py'
     cmd = identifier2sh + " -u %s -p %s -d \"%s\" " % (db_user, db_pass_id, db_name)
-    compose_msg(cmd, log_file)
+    sortinghat_log.info(cmd)
     os.system(cmd)
 
     # Do affiliations
     cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" affiliate  >> %s 2>&1" \
               %(db_user, db_pass, db_name, log_file)
-    compose_msg(cmd, log_file)
+    sortinghat_log.info(cmd)
     os.system(cmd)
 
     # Export data from Sorting Hat
@@ -1182,12 +1225,12 @@ def launch_sortinghat():
         # Export identities from sh to file
         cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" export --source \"%s:%s\" --identities %s >> %s 2>&1" \
                       %(db_user, db_pass, db_name, project_name.lower(), ds.get_name(), io_file_name, log_file)
-        compose_msg(cmd, log_file)
+        sortinghat_log.info(cmd)
         os.system(cmd)
         # Load identities in mg from file
         cmd = tools['sh2mg'] + " -u \"%s\" -p \"%s\" -d \"%s\" --source \"%s:%s\" %s >> %s 2>&1" \
                       %(db_user, db_pass, db_ds, project_name.lower(), ds.get_name(), io_file_name, log_file)
-        compose_msg(cmd, log_file)
+        sortinghat_log.info(cmd)
         os.system(cmd)
         os.remove(io_file_name)
 
@@ -1196,11 +1239,11 @@ def launch_sortinghat():
     db_sortinghat = options['generic']['db_sortinghat']
     cmd = "%s/domains_analysis.py -u %s -p %s -d %s --sortinghat>> %s 2>&1" \
         % (identities_dir, db_user, db_pass, db_name, log_file)
-    compose_msg(cmd, log_file)
+    sortinghat_log.info(cmd)
     os.system(cmd)
 
     if 'master' in options['sortinghat'] and success:
-        upload_sortinghat_master()
+        upload_sortinghat_master(sortinghat_log)
 
     # post-scripts
     launch_post_tool_scripts('sortinghat')
@@ -1208,11 +1251,11 @@ def launch_sortinghat():
     logging.info("Sortinghat done")
 
 
-def restore_sortinghat_master():
+def restore_sortinghat_master(restore_sortinghat_log):
     db_user = options['generic']['db_user']
     db_pass = options['generic']['db_password']
     db_name = options['generic']['db_sortinghat']
-    log_file = project_dir + '/log/launch_sortinghat.log'
+    log_file = log_files['sortinghat']
 
     master_dir = project_dir + '/sortinghat/'
     sh_master =  master_dir + options['sortinghat']['master']
@@ -1225,7 +1268,7 @@ def restore_sortinghat_master():
     ts = str(ts.date())
     backup_file = project_dir + '/backups/sh_' + ts + '.json'
 
-    code = export_sortinghat(db_user, db_pass, db_name, backup_file, log_file)
+    code = export_sortinghat(restore_sortinghat_log, db_user, db_pass, db_name, backup_file, log_file)
 
     if code != 0:
         logging.info("Error making a Sorting Hat backup.")
@@ -1244,13 +1287,13 @@ def restore_sortinghat_master():
     check_sortinghat_db(db_user, db_pass, db_name)
 
     # Import data from master file
-    code = import_sortinghat(db_user, db_pass, db_name, sh_master, log_file)
+    code = import_sortinghat(restore_sortinghat_log, db_user, db_pass, db_name, sh_master, log_file)
 
     if code != 0:
         logging.info("Error importing Sorting Hat data from master file %s." % sh_master)
         logging.info("Restoring old data")
 
-        code = import_sortinghat(db_user, db_pass, db_name, backup_file, log_file)
+        code = import_sortinghat(restore_sortinghat_log, db_user, db_pass, db_name, backup_file, log_file)
 
         if code != 0:
             msg = "Fatal error restoring Sorting Hat backup"
@@ -1266,34 +1309,34 @@ def restore_sortinghat_master():
     return True
 
 
-def upload_sortinghat_master():
+def upload_sortinghat_master(upload_sortinghat_log):
     db_user = options['generic']['db_user']
     db_pass = options['generic']['db_password']
     db_name = options['generic']['db_sortinghat']
-    log_file = project_dir + '/log/launch_sortinghat.log'
+    log_file = log_files['sortinghat']
 
     master_dir = project_dir + '/sortinghat/'
     sh_master =  master_dir + options['sortinghat']['master']
 
-    export_sortinghat(db_user, db_pass, db_name, sh_master, log_file)
+    export_sortinghat(upload_sortinghat_log, db_user, db_pass, db_name, sh_master, log_file)
 
     code = push_directory(master_dir)
 
 
-def import_sortinghat(db_user, db_pass, db_name, io_file_name, log_file):
+def import_sortinghat(import_sortinghat_log, db_user, db_pass, db_name, io_file_name, log_file):
     cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" load %s >> %s 2>&1" \
             % (db_user, db_pass, db_name, io_file_name, log_file)
-    compose_msg(cmd, log_file)
+    import_sortinghat_log.info(cmd)
 
     retcode = os.system(cmd)
 
     return retcode
 
 
-def export_sortinghat(db_user, db_pass, db_name, io_file_name, log_file):
+def export_sortinghat(export_sortinghat_log, db_user, db_pass, db_name, io_file_name, log_file):
     cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" export --identities %s >> %s 2>&1" \
             % (db_user, db_pass, db_name, io_file_name, log_file)
-    compose_msg(cmd, log_file)
+    export_sortinghat_log.info(cmd)
 
     retcode = os.system(cmd)
 
@@ -1306,7 +1349,7 @@ def launch_pullpo():
         if not check_tool(tools['pullpo']):
             return
 
-        compose_msg("pullpo is being executed")
+        main_log.info("pullpo is being executed")
         launched = False
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
@@ -1321,7 +1364,8 @@ def launch_pullpo():
         url = ""
         if options['pullpo'].has_key('url'):
             url = "--gh-url " + options['pullpo']['url']
-        log_file = project_dir + '/log/launch_pullpo.log'
+        log_file = log_files['pullpo']
+        pullpo_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
 
         # pre-scripts
         launch_pre_tool_scripts('pullpo')
@@ -1349,21 +1393,21 @@ def launch_pullpo():
                 # Launch pullpo for each project configured
                 for project in projects:
                     cmd = pullpo_cmd +  "\"%s\"  \"%s\">> %s 2>&1" % (owner, project, log_file)
-                    compose_msg(cmd, log_file)
+                    pullpo_log.info(cmd)
                     os.system(cmd)
             else:
                 # Launch pullpo for all the repositories
                 cmd = pullpo_cmd + "\"%s\"  >> %s 2>&1" % (owner, log_file)
-                compose_msg(cmd, log_file)
+                pullpo_log.info(cmd)
                 os.system(cmd)
         launched = True
 
         if launched:
-            compose_msg("[OK] pullpo executed")
+            main_log.info("[OK] pullpo executed")
         else:
-            compose_msg("[SKIPPED] pullpo not executed")
+            main_log.info("[SKIPPED] pullpo not executed")
     else:
-        compose_msg("[SKIPPED] pullpo was not executed, no conf available")
+        main_log.info("[SKIPPED] pullpo was not executed, no conf available")
 
 def launch_eventizer():
     # check if eventizer option exists
@@ -1371,7 +1415,7 @@ def launch_eventizer():
         if not check_tool(tools['eventizer']):
             return
 
-        compose_msg("eventizer is being executed")
+        main_log.info("eventizer is being executed")
         launched = False
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
@@ -1380,13 +1424,13 @@ def launch_eventizer():
         if 'key' not in options['eventizer']:
             msg = "Metup API key not provided. Use 'key' parameter to set one."
             logging.error('[eventizer] ' + msg)
-            compose_msg("[SKIPPED] eventizer not executed. %s" % msg)
+            main_log.info("[SKIPPED] eventizer not executed. %s" % msg)
             return
 
         if 'groups' not in options['eventizer']:
             msg = "Groups list not provided. Use 'groups' parameter to set one."
             logging.error('[eventizer] ' + msg)
-            compose_msg("[SKIPPED] eventizer not executed. %s" % msg)
+            main_log.info("[SKIPPED] eventizer not executed. %s" % msg)
             return
 
         eventizer_key = options['eventizer']['key']
@@ -1394,7 +1438,8 @@ def launch_eventizer():
         groups = options['eventizer']['groups']
         groups = groups.split(",")
 
-        log_file = project_dir + '/log/launch_eventizer.log'
+        log_file = log_files['eventizer']
+        eventizer_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
 
         # pre-scripts
         launch_pre_tool_scripts('eventizer')
@@ -1410,19 +1455,19 @@ def launch_eventizer():
             group_name = group.strip()
 
             cmd = eventizer_cmd +  "\"%s\" >> %s 2>&1" % (group_name, log_file)
-            compose_msg(cmd, log_file)
+            eventizer_log.info(cmd)
             os.system(cmd)
             launched = True
 
         if launched:
-            compose_msg("[OK] eventizer executed")
+            main_log.info("[OK] eventizer executed")
 
             # post-scripts
             launch_post_tool_scripts('eventizer')
         else:
-            compose_msg("[SKIPPED] eventizer not executed")
+            main_log.info("[SKIPPED] eventizer not executed")
     else:
-        compose_msg("[SKIPPED] eventizer was not executed, no conf available")
+        main_log.info("[SKIPPED] eventizer was not executed, no conf available")
 
 # http://code.activestate.com/recipes/577376-simple-way-to-execute-multiple-process-in-parallel/
 def exec_commands(cmds):
@@ -1475,7 +1520,7 @@ def launch_events_scripts():
     # Start one report_tool per data source active
     if options.has_key('metrics') or options.has_key('r'):
 
-        compose_msg("events being generated")
+        main_log.info("events being generated")
 
         json_dir = '../../../json'
         conf_file = project_dir + '/conf/main.conf'
@@ -1508,10 +1553,10 @@ def launch_events_scripts():
 
         exec_commands (commands)
 
-        compose_msg("[OK] events generated")
+        main_log.info("[OK] events generated")
 
     else:
-        compose_msg("[SKIPPED] Events not generated, no conf available")
+        main_log.info("[SKIPPED] Events not generated, no conf available")
 
 
 def launch_metrics_scripts():
@@ -1522,7 +1567,7 @@ def launch_metrics_scripts():
         if not check_tool(tools['r']):
             return
 
-        compose_msg("metrics tool being launched")
+        main_log.info("metrics tool being launched")
 
         r_libs = '../../r-lib'
         python_libs = '../grimoirelib_alch:../vizgrimoire:../vizgrimoire/analysis:../vizgrimoire/metrics:./'
@@ -1565,11 +1610,11 @@ def launch_metrics_scripts():
 
         exec_commands (commands)
 
-        compose_msg("[OK] metrics tool executed")
+        main_log.info("[OK] metrics tool executed")
 
         launch_post_tool_scripts('r')
     else:
-        compose_msg("[SKIPPED] Metrics tool was not executed, no conf available")
+        main_log.info("[SKIPPED] Metrics tool was not executed, no conf available")
 
 def get_ds_identities_cmd(db, type):
     idir = identities_dir
@@ -1577,7 +1622,7 @@ def get_ds_identities_cmd(db, type):
     db_pass = options['generic']['db_password']
     if (db_pass == ""): db_pass="''"
     db_ids = options['generic']['db_identities']
-    log_file = project_dir + '/log/identities.log'
+    log_file = log_files['identities']
 
     cmd = "%s/datasource2identities.py -u %s -p %s --db-name-ds=%s --db-name-ids=%s --data-source=%s>> %s 2>&1" \
             % (idir, db_user, db_pass, db, db_ids, type, log_file)
@@ -1593,7 +1638,8 @@ def launch_identity_scripts():
         db_user = options['generic']['db_user']
         db_pass = options['generic']['db_password']
         if (db_pass == ""): db_pass="''"
-        log_file = project_dir + '/log/identities.log'
+        log_file = log_files['identities']
+        identities_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
 
         if options['generic'].has_key('db_identities') and \
             options['generic'].has_key('db_sortinghat'):
@@ -1604,10 +1650,10 @@ def launch_identity_scripts():
         if options['generic'].has_key('db_identities'):
             db_identities = options['generic']['db_identities']
             cmd = "%s/unifypeople.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_identities, log_file)
-            compose_msg(cmd, log_file)
+            identities_log.info(cmd)
             os.system(cmd)
             cmd = "%s/domains_analysis.py -u %s -p %s -d %s >> %s 2>&1" % (idir, db_user, db_pass, db_identities, log_file)
-            compose_msg(cmd, log_file)
+            identities_log.info(cmd)
             os.system(cmd)
 
         # Generate unique identities for all data sources active
@@ -1622,51 +1668,48 @@ def launch_identity_scripts():
                 logging.error(ds.get_db_name() + " not in automator main.conf")
                 continue
             cmd = get_ds_identities_cmd(db_ds, ds.get_name())
-            compose_msg(cmd, log_file)
+            identities_log.info(cmd)
             os.system(cmd)
 
         if options['identities'].has_key('countries'):
             cmd = "%s/load_ids_mapping.py -m countries -t true -u %s -p %s --database %s >> %s 2>&1" \
                         % (idir, db_user, db_pass, db_identities, log_file)
-            compose_msg(cmd, log_file)
+            identities_log.info(cmd)
             os.system(cmd)
 
         if options['identities'].has_key('companies'):
             cmd = "%s/load_ids_mapping.py -m companies -t true -u %s -p %s --database %s >> %s 2>&1" \
                         % (idir, db_user, db_pass, db_identities, log_file)
-            compose_msg(cmd, log_file)
+            identities_log.info(cmd)
             os.system(cmd)
 
         logging.info("[OK] Identity scripts executed")
     else:
         logging.info("[SKIPPED] Unify identity scripts not executed, no conf available")
 
-def compose_msg(text, log_file = None):
-    # append text to log file
-    if log_file is None:
-        fd = open(msg_body, 'a')
-    else:
-        fd = open(log_file, 'a')
-    time_tag = '[' + time.strftime('%H:%M:%S') + ']'
-    fd.write(time_tag + ' ' + text)
-    fd.write('\n')
-    fd.close()
+def logs(name, size, filesNumber):
+    
+    # log
+    launch_log = logging.getLogger(name)
+    launch_log.setLevel(logging.DEBUG)
 
-def reset_log():
-    # remove log file
-    try:
-        os.remove(msg_body)
-    except OSError:
-        fd = open(msg_body, 'w')
-        fd.write('')
-        fd.close()
+    # rotating handler
+    rotate_log = logging.handlers.RotatingFileHandler(name, maxBytes=size, backupCount=filesNumber)
+    
+    # formatter
+    formatter = logging.Formatter("[%(asctime)s] %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
+    rotate_log.setFormatter(formatter)
+ 
+    launch_log.addHandler(rotate_log)
+
+    return launch_log
 
 def launch_copy_json():
     # copy JSON files to other directories
     # This option helps when having more than one automator, but all of the
     # json files should be moved to a centralized directory
     if options.has_key('copy-json'):
-        compose_msg("Copying JSON files to another directory")
+        main_log.info("Copying JSON files to another directory")
         destination = os.path.join(project_dir,options['copy-json']['destination_json'])
         distutils.dir_util.copy_tree(json_dir, destination)
 
@@ -1677,7 +1720,7 @@ def launch_commit_jsones():
         if not check_tool(tools['git']):
             return
 
-        compose_msg("Commiting new JSON files with git")
+        main_log.info("Commiting new JSON files with git")
 
         destination = os.path.join(project_dir,options['git-production']['destination_json'])
         distutils.dir_util.copy_tree(json_dir, destination)
@@ -1721,7 +1764,7 @@ def launch_database_dump():
         if not check_tool(tools['mysqldump']) or not check_tool(tools['compress']) or not check_tool(tools['rm']):
             return
 
-        compose_msg("Dumping databases")
+        main_log.info("Dumping databases")
 
         dbs = []
 
@@ -1818,7 +1861,7 @@ def launch_rsync():
         if not check_tool(tools['rsync']):
             return
 
-        compose_msg("rsync to production server")
+        main_log.info("rsync to production server")
 
         fd = open(msg_body, 'a')
 
@@ -1831,7 +1874,7 @@ def launch_rsync():
 
         fd.close()
     else:
-        compose_msg("[SKIPPED] rsync scripts not executed, no conf available")
+        main_log.info("[SKIPPED] rsync scripts not executed, no conf available")
 
 def write_json_config(data, filename):
     # The file should be created in project_dir
@@ -1846,7 +1889,7 @@ def launch_metricsdef_config():
     if not os.path.isdir(filedir):
         os.makedirs(filedir)
     filename = os.path.join(filedir, "metrics.json")
-    compose_msg("Writing metrics definition in: " + filename)
+    main_log.info("Writing metrics definition in: " + filename)
     report = get_report_module()
     automator_file = project_dir + '/conf/main.conf'
     metrics_dir = os.path.join(project_dir, "tools", "GrimoireLib","vizgrimoire","metrics")
@@ -1854,7 +1897,7 @@ def launch_metricsdef_config():
     dss_active = report.get_data_sources()
     all_metricsdef = {}
     for ds in dss_active:
-        compose_msg("Metrics def for " + ds.get_name())
+        main_log.info("Metrics def for " + ds.get_name())
         metricsdef = ds.get_metrics_definition(ds)
         if metricsdef is not None:
             all_metricsdef[ds.get_name()] = metricsdef
@@ -1884,7 +1927,7 @@ def launch_vizjs_config():
     config['end_date'] = options['r']['end_date']
     config['project_info'] = get_project_info()
 
-    compose_msg("Writing config file for VizGrimoireJS: " + production_dir + "config.json")
+    main_log.info("Writing config file for VizGrimoireJS: " + production_dir + "config.json")
 
     write_json_config(config, 'config.json')
 
@@ -2007,6 +2050,8 @@ if __name__ == '__main__':
     opt = get_options()
     initialize_globals(opt.project_dir)
 
+    main_log = logs(msg_body, MAX_LOG_BYTES, MAX_LOG_FILES)
+
     pid = str(os.getpid())
     pidfile = os.path.join(opt.project_dir, "launch.pid")
 
@@ -2016,8 +2061,7 @@ if __name__ == '__main__':
     else:
         file(pidfile, 'w').write(pid)
 
-    reset_log()
-    compose_msg("Starting ..")
+    main_log.info("Starting ..")
 
     read_main_conf()
 
@@ -2035,7 +2079,7 @@ if __name__ == '__main__':
             print_std(" %s minutes" % ((t1-t0).seconds/60))
     print_std("Finished.")
 
-    compose_msg("Process finished correctly ...")
+    main_log.info("Process finished correctly ...")
 
     # done, we sent the result
     project = options['generic']['project']

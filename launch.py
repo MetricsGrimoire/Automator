@@ -68,6 +68,7 @@ tools = {
     'mls': '/usr/local/bin/mlstats',
     'irc': '/usr/local/bin/irc_analysis.py',
     'mediawiki': '/usr/local/bin/mediawiki_analysis.py',
+    'confluence': '/usr/local/bin/confluence_analysis.py',
     'sibyl': '/usr/local/bin/sibyl.py',
     'octopus': '/usr/local/bin/octopus',
     'pullpo': '/usr/local/bin/pullpo',
@@ -167,6 +168,7 @@ def initialize_globals(pdir):
         'mlstats' : project_dir + '/log/launch_mlstats.log',
         'irc' : project_dir + '/log/launch_irc.log',
         'mediawiki' : project_dir + '/log/launch_mediawiki.log',
+        'confluence' : project_dir + '/log/launch_confluence.log',
         'sibyl' : project_dir + '/log/launch_sibyl.log',
         'octopus_puppet' : project_dir + '/log/launch_octopus_puppet.log',
         'octopus_docker' : project_dir + '/log/launch_octopus_docker.log',
@@ -354,7 +356,7 @@ def launch_post_tool_scripts(tool):
         main_log.info("No %s post scripts configured" % tool)
 
 def launch_cvsanaly():
-        
+
     log_file = log_files['cvsanaly']
     cvsanaly_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
 
@@ -729,7 +731,22 @@ def launch_irc():
     else:
         main_log.info("[SKIPPED] irc_analysis was not executed, no conf available")
 
+
 def launch_mediawiki():
+    if options.has_key('mediawiki'):
+        backend  = options['mediawiki']['backend']
+
+        if backend == 'mediawiki':
+            launch_mediawiki_analysis()
+        elif backend == 'confluence':
+            launch_confluence_analysis()
+        else:
+            main_log.info("[SKIPPED] mediawiki %s backend not available" % backend)
+    else:
+        main_log.info("[SKIPPED] mediawiki was not executed, no conf available")
+
+
+def launch_mediawiki_analysis():
     if options.has_key('mediawiki'):
         if not check_tool(tools['mediawiki']):
             return
@@ -764,6 +781,45 @@ def launch_mediawiki():
             main_log.info("[SKIPPED] mediawiki_analysis not executed")
     else:
         main_log.info("[SKIPPED] mediawiki_analysis was not executed, no conf available")
+
+
+def launch_confluence_analysis():
+    if options.has_key('mediawiki'):
+        if not check_tool(tools['confluence']):
+            return
+
+        main_log.info("confluence_analysis is being executed")
+        launched = False
+        db_admin_user = options['generic']['db_user']
+        db_user = db_admin_user
+        db_pass = options['generic']['db_password']
+        db_name = options['generic']['db_mediawiki']
+        url = options['mediawiki']['url']
+        spaces = options['mediawiki']['spaces']
+        log_file = log_files['confluence']
+        confluence_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
+
+        # pre-scripts
+        launch_pre_tool_scripts('mediawiki')
+
+        for space in spaces.split(","):
+            launched = True
+            # ./confluence_analysis.py -d acs_confluence_geode -u root -p root https://cwiki.apache.org/confluence/
+            cmd = tools['confluence'] + " -u \"%s\" -p \"%s\" -d \"%s\" \"%s\" \"%s\" >> %s 2>&1" \
+                      % (db_user, db_pass, db_name, url, space, log_file)
+            confluence_log.info(cmd)
+            os.system(cmd)
+
+        if launched:
+            main_log.info("[OK] confluence_analysis executed")
+
+            # post-scripts
+            launch_post_tool_scripts('mediawiki')
+        else:
+            main_log.info("[SKIPPED] confluence_analysis not executed")
+    else:
+        main_log.info("[SKIPPED] confluence_analysis was not executed, no conf available")
+
 
 def launch_downloads():
     # check if downloads option exists. If it does, downloads are executed
@@ -1688,18 +1744,18 @@ def launch_identity_scripts():
         logging.info("[SKIPPED] Unify identity scripts not executed, no conf available")
 
 def logs(name, size, filesNumber):
-    
+
     # log
     launch_log = logging.getLogger(name)
     launch_log.setLevel(logging.DEBUG)
 
     # rotating handler
     rotate_log = logging.handlers.RotatingFileHandler(name, maxBytes=size, backupCount=filesNumber)
-    
+
     # formatter
     formatter = logging.Formatter("[%(asctime)s] %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
     rotate_log.setFormatter(formatter)
- 
+
     launch_log.addHandler(rotate_log)
 
     return launch_log
@@ -1984,8 +2040,12 @@ def get_project_info():
         project_info['scr_url'] = scr_url
     # Mediawiki URL
     if options.has_key('mediawiki'):
-        mediawiki_url = options['mediawiki']['sites']
-        project_info['mediawiki_url'] = mediawiki_url
+        if options['mediawiki']['backend'] == 'mediawiki':
+            mediawiki_url = options['mediawiki']['sites']
+            project_info['mediawiki_url'] = mediawiki_url
+        elif ['mediawiki']['backend'] == 'confluence':
+            confluence_url = options['mediawiki']['url']
+            project_info['mediawiki_url'] = concluence_url
 
     return project_info
 
@@ -2035,7 +2095,7 @@ tasks_section = dict({
 
 # Use this for serial execution of data gathering
 tasks_order_serial = ['check-dbs','cvsanaly','bicho','gerrit','mlstats','irc','mediawiki', 'downloads',
-                      'sibyl','octopus','pullpo','eventizer','sortinghat','events','metrics','copy-json',
+                      'sibyl','octopus','pullpo','eventizer', 'sortinghat','events','metrics','copy-json',
                       'git-production','db-dump','json-dump','rsync']
 
 # Use this for parallel execution of data gathering

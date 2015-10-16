@@ -2118,7 +2118,7 @@ if __name__ == '__main__':
 
 		if os.path.isfile(pidfile):
 		    print_std("%s already exists, launch process seems to be running. Exiting .." % pidfile)
-		    sys.exit(1)
+		    sys.exit(0)
 		else:
 		    file(pidfile, 'w').write(pid)
 
@@ -2149,7 +2149,7 @@ if __name__ == '__main__':
 
 		os.unlink(pidfile)
     except SystemExit as e:
-		if e[0]==1:
+		if e[0]==0:
 			print "Finished OK"
 		else:
 			os.remove(project_dir+"/launch.pid")

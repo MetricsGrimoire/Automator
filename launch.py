@@ -2106,44 +2106,52 @@ tasks_order = tasks_order_parallel
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s')
-    opt = get_options()
-    initialize_globals(opt.project_dir)
+    try:
+	    logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s')
+	    opt = get_options()
+		initialize_globals(opt.project_dir)
 
-    main_log = logs(msg_body, MAX_LOG_BYTES, MAX_LOG_FILES)
+		main_log = logs(msg_body, MAX_LOG_BYTES, MAX_LOG_FILES)
 
-    pid = str(os.getpid())
-    pidfile = os.path.join(opt.project_dir, "launch.pid")
+		pid = str(os.getpid())
+		pidfile = os.path.join(opt.project_dir, "launch.pid")
 
-    if os.path.isfile(pidfile):
-        print_std("%s already exists, launch process seems to be running. Exiting .." % pidfile)
-        sys.exit()
-    else:
-        file(pidfile, 'w').write(pid)
+		if os.path.isfile(pidfile):
+		    print_std("%s already exists, launch process seems to be running. Exiting .." % pidfile)
+		    sys.exit(0)
+		else:
+		    file(pidfile, 'w').write(pid)
 
-    main_log.info("Starting ..")
+		main_log.info("Starting ..")
 
-    read_main_conf()
+		read_main_conf()
 
-    check_tools()
+		check_tools()
 
-    if opt.section is not None:
-        tasks_section[opt.section]()
-    else:
-        for section in tasks_order:
-            t0 = dt.datetime.now()
-            print_std("Executing %s ...." % (section), new_line=False)
-            sys.stdout.flush()
-            tasks_section[section]()
-            t1 = dt.datetime.now()
-            print_std(" %s minutes" % ((t1-t0).seconds/60))
-    print_std("Finished.")
+		if opt.section is not None:
+		    tasks_section[opt.section]()
+		else:
+		    for section in tasks_order:
+		        t0 = dt.datetime.now()
+		        print_std("Executing %s ...." % (section), new_line=False)
+		        sys.stdout.flush()
+		        tasks_section[section]()
+		        t1 = dt.datetime.now()
+		        print_std(" %s minutes" % ((t1-t0).seconds/60))
+		print_std("Finished.")
 
-    main_log.info("Process finished correctly ...")
+		main_log.info("Process finished correctly ...")
 
-    # done, we sent the result
-    project = options['generic']['project']
-    mail = options['generic']['mail']
-    os.system("mail -s \"[%s] data updated\" %s < %s" % (project, mail, msg_body))
+		# done, we sent the result
+		project = options['generic']['project']
+		mail = options['generic']['mail']
+		os.system("mail -s \"[%s] data updated\" %s < %s" % (project, mail, msg_body))
 
-    os.unlink(pidfile)
+		os.unlink(pidfile)
+    except SystemExit as e:
+		if e[0]==0:
+			print "Finished OK"
+		else:
+			os.remove(project_dir+"/launch.pid")
+	except:
+		os.remove(project_dir+"/launch.pid")

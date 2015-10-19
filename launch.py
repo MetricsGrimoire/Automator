@@ -2149,6 +2149,10 @@ if __name__ == '__main__':
         if e[0]==1:
             print "Finished OK"
         else:
-            os.remove(project_dir+"/launch.pid")
+            print e
+            if os.path.isfile(project_dir+"/launch.pid"):
+                os.remove(project_dir+"/launch.pid")
     except:
-        os.remove(project_dir+"/launch.pid")
+        print e
+        if os.path.isfile(project_dir+"/launch.pid"):
+            os.remove(project_dir+"/launch.pid")

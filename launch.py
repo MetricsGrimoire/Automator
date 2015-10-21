@@ -2153,6 +2153,6 @@ if __name__ == '__main__':
             if os.path.isfile(project_dir+"/launch.pid"):
                 os.remove(project_dir+"/launch.pid")
     except:
-        print e
+        print sys.exc_info()
         if os.path.isfile(project_dir+"/launch.pid"):
             os.remove(project_dir+"/launch.pid")

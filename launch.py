@@ -1017,28 +1017,9 @@ def launch_octopus_docker():
 
         for owner in owners:
             owner = owner.strip()
-
-            repositories = None
-
-            if options['octopus_docker'].has_key('repositories') and len(owners) == 1:
-                repositories = options['octopus_docker']['repositories'].split(",")
-            elif options['octopus_docker'].has_key('repositories'):
-                logging.error("Wrong main.conf. Several octopus docker owners and general repositories config.")
-                raise
-
-            if len(owners) > 1:
-                if options['octopus_docker'].has_key('repositories_' + owner.lower()):
-                    repositories = options['octopus_docker']['repositories_' + owner.lower()].split(",")
-
-            if repositories:
-                # Launch octopus for each docker repository configured
-                for repo in repositories:
-                    repo = repo.strip()
-                    cmd = octopus_cmd +  "\"%s\"  \"%s\">> %s 2>&1" % (owner, repo, log_file)
-                    octopus_docker_log.info(cmd)
-                    os.system(cmd)
-            else:
-                logging.error("No repositories configured for %s docker owner. Skipped" % owner)
+            cmd = octopus_cmd +  "\"%s\" >> %s 2>&1" % (owner, log_file)
+            octopus_docker_log.info(cmd)
+            os.system(cmd)
 
         # Export data if required
         if options['octopus_docker'].has_key('export'):

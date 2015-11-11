@@ -534,6 +534,8 @@ def launch_gerrit():
     # reads a conf file with all of the information and launches bicho
     if options.has_key('gerrit'):
 
+        backend  = options['gerrit']['backend']
+        
         if not check_tool(tools['scr']):
             return
 
@@ -553,7 +555,7 @@ def launch_gerrit():
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         process_output = proc.communicate()
         db_projects = eval(process_output[0])
-
+        
         # Retrieving projects
         if options['gerrit'].has_key('projects'):
             projects = options['gerrit']['projects']
@@ -617,8 +619,16 @@ def launch_gerrit():
             g_user = ''
             if options['gerrit'].has_key('user'):
                 g_user = '--backend-user ' + options['gerrit']['user']
-            cmd = tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s %s -u %s --gerrit-project=%s %s >> %s 2>&1" \
+            if backend == 'gerrit':
+                cmd = tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s %s -u %s --gerrit-project=%s %s >> %s 2>&1" \
                             % (db_user, db_pass, database, str(delay), backend, g_user, trackers[0], project, flags, log_file)
+            elif backend == 'reviewboard':
+                cmd = tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s %s -u %s %s >> %s 2>&1" \
+                            % (db_user, db_pass, database, str(delay), backend, g_user, trackers[0], project, flags, log_file)
+            else:
+            	 main_log.info("[SKIPPED] bicho (gerrit) not executed. Backend %s not found." % backend)
+                return
+                
             gerrit_log.info(cmd)
             os.system(cmd)
 

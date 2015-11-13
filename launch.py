@@ -530,25 +530,7 @@ def remove_gerrit_repositories(repositories, db_user, db_pass, database):
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         process_output = proc.communicate()
 
-def launch_gerrit():
-    # reads a conf file with all of the information and launches bicho
-    if options.has_key('gerrit'):
-
-        backend  = options['gerrit']['backend']
-
-        if not check_tool(tools['scr']):
-            return
-
-        main_log.info("bicho (gerrit) is being executed")
-        launched = False
-
-        database = options['generic']['db_gerrit']
-        db_user = options['generic']['db_user']
-        db_pass = options['generic']['db_password']
-        delay = options['gerrit']['delay']
-        backend = options['gerrit']['backend']
-        trackers = options['gerrit']['trackers']
-
+def update_gerrit_repositories(db_user, db_pass, database, trackers):
         # Retrieving projects from database
         proc = subprocess.Popen([tools['rremoval'], "-u", db_user, "-p", db_pass,
                                  "-d", database, "-b", "bicho", "-l"],
@@ -586,7 +568,57 @@ def launch_gerrit():
         if len(projects) == 0 or float(len(to_remove_projects)) / float(len(projects)) >= 0.05:
             main_log.info("WARNING: More than a 5% of the total number of projects is required to be removed. No action.")
         else:
+            remove_gerrit_repositories(to_remove_projects, db_user, db_pass, database)        # Retrieving projects
+        if options['gerrit'].has_key('projects'):
+            projects = options['gerrit']['projects']
+            projects = [str(trackers[0]) + "_" + project.replace('"', '') for project in projects]
+        else:
+            all_projects = repositories(repos_dir + GERRIT_PROJECTS)
+            # Open repositories to be analyzed
+            projects_blacklist = repositories(repos_dir + GERRIT_PROJECTS_BLACKLIST)
+            projects = [project for project in all_projects if project not in projects_blacklist ]
+            # Using format from Bicho database to manage Gerrit URLs
+            projects = [str(trackers[0]) + "_" + project for project in projects]
+            projects_blacklist = [str(trackers[0]) + "_" + project for project in projects_blacklist]
+
+            # Removing blacklist projects if they are found in the database
+            projects_blacklist = [project for project in projects_blacklist if project in db_projects]
+            main_log.info("Removing the following projects found in the blacklist and in the database")
+            # Checking if more than a 5% of the total list is going to be removed.
+            # If so, a warning message is raised and no project is removed.
+            if len(projects) == 0 or float(len(projects_blacklist))/float(len(projects)) > 0.05:
+                main_log.info("WARNING: More than a 5% of the total number of projects is required to be removed. No action.")
+            else:
+                remove_gerrit_repositories(projects_blacklist, db_user, db_pass, database)
+
+        # Removing those projects that are found in the database, but not in
+        # the list of projects.
+        to_remove_projects = [project for project in db_projects if project not in projects]
+        main_log.info("Removing the following deprecated projects from the database")
+        if len(projects) == 0 or float(len(to_remove_projects)) / float(len(projects)) >= 0.05:
+            main_log.info("WARNING: More than a 5% of the total number of projects is required to be removed. No action.")
+        else:
             remove_gerrit_repositories(to_remove_projects, db_user, db_pass, database)
+
+        return projects
+
+def launch_gerrit():
+    # reads a conf file with all of the information and launches bicho
+    if options.has_key('gerrit'):
+        backend  = options['gerrit']['backend']
+
+        if not check_tool(tools['scr']):
+            return
+
+        main_log.info("bicho (gerrit) is being executed")
+        launched = False
+
+        database = options['generic']['db_gerrit']
+        db_user = options['generic']['db_user']
+        db_pass = options['generic']['db_password']
+        delay = options['gerrit']['delay']
+        backend = options['gerrit']['backend']
+        trackers = options['gerrit']['trackers']
 
         debug = options['gerrit']['debug']
         log_table = None
@@ -595,10 +627,19 @@ def launch_gerrit():
         log_file = log_files['gerrit']
         gerrit_log = logs(log_file, MAX_LOG_BYTES, MAX_LOG_FILES)
 
-
         flags = ""
         if debug:
             flags = flags + " -g"
+
+        if backend == 'gerrit':
+            projects = update_gerrit_repositories(db_user, db_pass, database, trackers)
+            projects = [project.replace(str(trackers[0]) + "_", "") for project in projects]
+        elif backend == 'reviewboard':
+            projects = options['gerrit']['projects']
+            projects = [str(trackers[0]) + "/groups/" + project.replace('"', '') for project in projects]
+        else:
+            main_log.info("[SKIPPED] bicho (gerrit) not executed. Backend %s not found." % backend)
+            return
 
         # pre-scripts
         launch_pre_tool_scripts('gerrit')
@@ -608,7 +649,6 @@ def launch_gerrit():
         last = len(projects)
 
         # Re-formating the projects name
-        projects = [project.replace(str(trackers[0]) + "_", "") for project in projects]
         for project in projects:
             launched = True
             cont = cont + 1
@@ -623,15 +663,14 @@ def launch_gerrit():
                 cmd = tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s %s -u %s --gerrit-project=%s %s >> %s 2>&1" \
                             % (db_user, db_pass, database, str(delay), backend, g_user, trackers[0], project, flags, log_file)
             elif backend == 'reviewboard':
-                cmd = tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s %s -u %s %s >> %s 2>&1" \
-                            % (db_user, db_pass, database, str(delay), backend, g_user, trackers[0], project, flags, log_file)
+                cmd = tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s %s >> %s 2>&1" \
+                            % (db_user, db_pass, database, str(delay), backend, project, flags, log_file)
             else:
                 main_log.info("[SKIPPED] bicho (gerrit) not executed. Backend %s not found." % backend)
                 return
 
             gerrit_log.info(cmd)
             os.system(cmd)
-
 
         if launched:
             main_log.info("[OK] bicho (gerrit) executed")
@@ -642,8 +681,6 @@ def launch_gerrit():
             main_log.info("[SKIPPED] bicho (gerrit) not executed")
     else:
         main_log.info("[SKIPPED] bicho (gerrit) not executed, no conf available")
-
-
 
 def launch_mlstats():
     if options.has_key('mlstats'):

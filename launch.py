@@ -213,7 +213,6 @@ def repositories(file_path):
    global conf_dir
 
    file_path  = os.path.join(conf_dir, file_path)
-   print file_path
    repositories = open(file_path).read().splitlines()
 
    return repositories
@@ -268,9 +267,9 @@ def check_tools():
     for tool in tools:
         if not check_tool(tools[tool]):
             main_log.info(tools[tool]+" not found or not executable.")
-            print (tools[tool]+" not found or not executable.")
             tools_ok = False
-    if not tools_ok: print ("Missing tools. Some reports could not be created.")
+    if not tools_ok:
+        main_log.info("Missing tools. Some reports could not be created.")
 
 def launch_checkdbs():
     dbs = []
@@ -316,13 +315,14 @@ def launch_checkdbs():
              db = MySQLdb.connect(user = db_user, passwd = db_password,  db = dbname)
              db.close()
         except:
-            print ("Can't connect to " + dbname)
+            main_log.error("Can't connect to " + dbname)
+            print("ERROR: Can't connect to " + dbname)
             db = MySQLdb.connect(user = db_user, passwd = db_password)
             cursor = db.cursor()
             query = "CREATE DATABASE " + dbname + " CHARACTER SET utf8"
             cursor.execute(query)
             db.close()
-            print (dbname+" created")
+            main_log.info(dbname+" created")
 
 def launch_scripts(scripts):
     # Run a list of scripts
@@ -411,7 +411,7 @@ def do_bicho(section = None):
     # reads a conf file with all of the information and launches bicho
     if section is None: section = 'bicho'
     if not section.startswith("bicho"):
-        logging.error("Wrong bicho section name " + section)
+        main_log.error("Wrong bicho section name " + section)
     if options.has_key(section):
         if not check_tool(tools['its']):
             return
@@ -496,7 +496,7 @@ def do_bicho(section = None):
 
 def launch_gather():
     """ This tasks will execute in parallel all data gathering tasks """
-    logging.info("Executing all data gathering tasks in parallel")
+    main_log.info("Executing all data gathering tasks in parallel")
 
     from multiprocessing import Process, active_children
 
@@ -504,7 +504,6 @@ def launch_gather():
                           'irc','mediawiki', 'downloads', 'sibyl',
                           'octopus','pullpo','eventizer']
     for section in gather_tasks_order:
-        logging.info("Executing %s ...." % (section))
         p = Process(target=tasks_section_gather[section])
         p.start()
 
@@ -759,7 +758,7 @@ def launch_irc():
                 irc_log.info(cmd)
                 os.system(cmd)
             else:
-                logging.error("Slack IRC supports need token option.")
+                main_log.error("Slack IRC supports need token option.")
         else:
             for channel in channels:
                 if not os.path.isdir(os.path.join(irc_dir,channel)): continue
@@ -1132,7 +1131,7 @@ def launch_octopus_github():
             if options['octopus_github'].has_key('repositories') and len(owners) == 1:
                 repositories = options['octopus_github']['repositories'].split(",")
             elif options['octopus_github'].has_key('repositories'):
-                logging.error("Wrong main.conf. Several octopus github owners and general repositories config.")
+                main_log.error("Wrong main.conf. Several octopus github owners and general repositories config.")
                 raise
 
             if len(owners) > 1:
@@ -1219,22 +1218,22 @@ def check_sortinghat_db(db_user, db_pass, db_name):
     try:
          db = MySQLdb.connect(user = db_user, passwd = db_pass,  db = db_name)
          db.close()
-         print ("Sortinghat " + db_name + " already exists")
+         main_log.info("Sortinghat " + db_name + " already exists")
     except:
-        print ("Can't connect to " + db_name)
-        print ("Creating sortinghat database ...")
+        main_log.error("Can't connect to " + db_name)
+        main_log.info("Creating sortinghat database ...")
         cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" init \"%s\">> %s 2>&1" \
                       %(db_user, db_pass, db_name, log_file)
         sortinghat_affiliations_log.info(cmd)
         os.system(cmd)
 
 def launch_sortinghat():
-    logging.info("Sortinghat working ...")
+    main_log.info("Sortinghat working ...")
     if not check_tool(tools['sortinghat']):
-        logging.info("Sortinghat tool not available,")
+        main_log.error("Sortinghat tool not available,")
         return
     if 'db_sortinghat' not in options['generic']:
-        logging.info("No database for Sortinghat configured.")
+        main_log.error("No database for Sortinghat configured.")
         return
     project_name = options['generic']['project']
     db_user = options['generic']['db_user']
@@ -1270,7 +1269,7 @@ def launch_sortinghat():
         if ds.get_db_name() in options['generic']:
             db_ds = options['generic'][ds.get_db_name()]
         else:
-            logging.error(ds.get_db_name() + " not in automator main.conf")
+            main_log.error(ds.get_db_name() + " not in automator main.conf")
             continue
         # Export identities from ds
         cmd = tools['mg2sh'] + " -u \"%s\" -p \"%s\" -d \"%s\" --source \"%s:%s\" -o %s >> %s 2>&1" \
@@ -1304,7 +1303,7 @@ def launch_sortinghat():
         if ds.get_db_name() in options['generic']:
             db_ds = options['generic'][ds.get_db_name()]
         else:
-            logging.error(ds.get_db_name() + " not in automator main.conf")
+            main_log.error(ds.get_db_name() + " not in automator main.conf")
             continue
         # Export identities from sh to file
         cmd = tools['sortinghat'] + " -u \"%s\" -p \"%s\" -d \"%s\" export --source \"%s:%s\" --identities %s >> %s 2>&1" \
@@ -1332,7 +1331,7 @@ def launch_sortinghat():
     # post-scripts
     launch_post_tool_scripts('sortinghat')
 
-    logging.info("Sortinghat done")
+    main_log.info("Sortinghat done")
 
 
 def restore_sortinghat_master(restore_sortinghat_log):
@@ -1355,10 +1354,10 @@ def restore_sortinghat_master(restore_sortinghat_log):
     code = export_sortinghat(restore_sortinghat_log, db_user, db_pass, db_name, backup_file, log_file)
 
     if code != 0:
-        logging.info("Error making a Sorting Hat backup.")
+        main_log.info("Error making a Sorting Hat backup.")
         return False
     else:
-        logging.info("Sorting Hat backup dumped to %s" % (backup_file))
+        main_log.info("Sorting Hat backup dumped to %s" % (backup_file))
 
     # Drop database
     db = MySQLdb.connect(user=db_user, passwd=db_pass)
@@ -1374,21 +1373,21 @@ def restore_sortinghat_master(restore_sortinghat_log):
     code = import_sortinghat(restore_sortinghat_log, db_user, db_pass, db_name, sh_master, log_file)
 
     if code != 0:
-        logging.info("Error importing Sorting Hat data from master file %s." % sh_master)
-        logging.info("Restoring old data")
+        main_log.info("Error importing Sorting Hat data from master file %s." % sh_master)
+        main_log.info("Restoring old data")
 
         code = import_sortinghat(restore_sortinghat_log, db_user, db_pass, db_name, backup_file, log_file)
 
         if code != 0:
             msg = "Fatal error restoring Sorting Hat backup"
-            logging.info(msg)
+            main_log.info(msg)
             raise Exception(msg)
         else:
-            logging.info("Backup restored.")
-            logging.info("New Sorting Hat info will not updated on master file.")
+            main_log.info("Backup restored.")
+            main_log.info("New Sorting Hat info will not updated on master file.")
             return False
     else:
-        logging.info("Data from master file imported into Sorting Hat")
+        main_log.info("Data from master file imported into Sorting Hat")
 
     return True
 
@@ -1468,7 +1467,7 @@ def launch_pullpo():
             if options['pullpo'].has_key('projects') and len(owners) == 1:
                 projects = options['pullpo']['projects']
             elif options['pullpo'].has_key('projects'):
-                logging.error("Wrong main.conf. Several pullpo owners and general projects config.")
+                main_log.error("Wrong main.conf. Several pullpo owners and general projects config.")
                 raise
             if len(owners) > 1:
                 if options['pullpo'].has_key('projects_' + owner.lower()):
@@ -1507,13 +1506,13 @@ def launch_eventizer():
 
         if 'key' not in options['eventizer']:
             msg = "Metup API key not provided. Use 'key' parameter to set one."
-            logging.error('[eventizer] ' + msg)
+            main_log.error('[eventizer] ' + msg)
             main_log.info("[skipped] eventizer not executed. %s" % msg)
             return
 
         if 'groups' not in options['eventizer']:
             msg = "Groups list not provided. Use 'groups' parameter to set one."
-            logging.error('[eventizer] ' + msg)
+            main_log.error('[eventizer] ' + msg)
             main_log.info("[skipped] eventizer not executed. %s" % msg)
             return
 
@@ -1564,7 +1563,7 @@ def exec_commands(cmds):
     def success(p):
         return p.returncode == 0
     def fail():
-        logging.error("Problems in report_tool.py execution. See logs.")
+        main_log.error("Problems in report_tool.py execution. See logs.")
         sys.exit(1)
 
     # max_task = cpu_count()
@@ -1622,7 +1621,7 @@ def launch_events_scripts():
         if params.subtask:
             ds = report.get_data_source(params.subtask)
             if ds is None:
-                logging.error("Data source " + params.subtask + " not found")
+                main_log.error("Data source " + params.subtask + " not found")
                 return
             dss = [ds]
 
@@ -1680,7 +1679,7 @@ def launch_metrics_scripts():
             report = get_report_module()
             ds = report.get_data_source(params.subtask)
             if ds is None:
-                logging.error("Data source " + params.subtask + " not found")
+                main_log.error("Data source " + params.subtask + " not found")
                 return
             dss = [ds]
 
@@ -1716,7 +1715,7 @@ def get_ds_identities_cmd(db, type):
 def launch_identity_scripts():
     # using the conf executes cvsanaly for the repos inside scm dir
     if options.has_key('identities'):
-        logging.info("Unique identities scripts are being executed")
+        main_log.info("Unique identities scripts are being executed")
         # idir = options['identities']['iscripts_path']
         idir = identities_dir
         db_user = options['generic']['db_user']
@@ -1749,7 +1748,7 @@ def launch_identity_scripts():
             if ds.get_db_name() in options['generic']:
                 db_ds = options['generic'][ds.get_db_name()]
             else:
-                logging.error(ds.get_db_name() + " not in automator main.conf")
+                main_log.error(ds.get_db_name() + " not in automator main.conf")
                 continue
             cmd = get_ds_identities_cmd(db_ds, ds.get_name())
             identities_log.info(cmd)
@@ -1767,9 +1766,9 @@ def launch_identity_scripts():
             identities_log.info(cmd)
             os.system(cmd)
 
-        logging.info("[OK] Identity scripts executed")
+        main_log.info("[OK] Identity scripts executed")
     else:
-        logging.info("[skipped] Unify identity scripts not executed, no conf available")
+        main_log.info("[skipped] Unify identity scripts not executed, no conf available")
 
 def logs(name, size, filesNumber):
 
@@ -2078,14 +2077,6 @@ def get_project_info():
 
     return project_info
 
-def print_std(string, new_line=True):
-    # Send string to standard input if quiet mode is disabled
-    if not opt.quiet_mode:
-        if new_line:
-            print(string)
-        else:
-            print(string),
-
 # All tasks related to data gathering
 tasks_section_gather = {
     'cvsanaly':launch_cvsanaly,
@@ -2158,13 +2149,7 @@ if __name__ == '__main__':
             tasks_section[opt.section]()
         else:
             for section in tasks_order:
-                t0 = dt.datetime.now()
-                print_std("Executing %s ...." % (section), new_line=False)
-                sys.stdout.flush()
                 tasks_section[section]()
-                t1 = dt.datetime.now()
-                print_std(" %s minutes" % ((t1-t0).seconds/60))
-        print_std("Finished.")
 
         main_log.info("Process finished correctly ...")
 
@@ -2176,12 +2161,12 @@ if __name__ == '__main__':
         os.unlink(pidfile)
     except SystemExit as e:
         if e[0]==1:
-            print "Finished OK"
+            print("Finished OK")
         else:
-            print e
+            print(e)
             if os.path.isfile(project_dir+"/launch.pid"):
                 os.remove(project_dir+"/launch.pid")
     except:
-        print sys.exc_info()
+        print(sys.exc_info())
         if os.path.isfile(project_dir+"/launch.pid"):
             os.remove(project_dir+"/launch.pid")

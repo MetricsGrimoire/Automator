@@ -398,9 +398,9 @@ def launch_cvsanaly():
             # post-scripts
             launch_post_tool_scripts('cvsanaly')
         else:
-            main_log.info("[SKIPPED] cvsanaly was not executed")
+            main_log.info("[skipped] cvsanaly was not executed")
     else:
-        main_log.info("[SKIPPED] cvsanaly not executed, no conf available")
+        main_log.info("[skipped] cvsanaly not executed, no conf available")
 
 def launch_bicho(section = None):
     do_bicho('bicho')
@@ -490,9 +490,9 @@ def do_bicho(section = None):
             # post-scripts
             launch_post_tool_scripts(section)
         else:
-            main_log.info("[SKIPPED] bicho was not executed")
+            main_log.info("[skipped] bicho was not executed")
     else:
-        main_log.info("[SKIPPED] bicho not executed, no conf available for " + section)
+        main_log.info("[skipped] bicho not executed, no conf available for " + section)
 
 def launch_gather():
     """ This tasks will execute in parallel all data gathering tasks """
@@ -638,7 +638,7 @@ def launch_gerrit():
             projects = options['gerrit']['projects']
             projects = [str(trackers[0]) + "/groups/" + project.replace('"', '') for project in projects]
         else:
-            main_log.info("[SKIPPED] bicho (gerrit) not executed. Backend %s not found." % backend)
+            main_log.info("[skipped] bicho (gerrit) not executed. Backend %s not found." % backend)
             return
 
         # pre-scripts
@@ -666,7 +666,7 @@ def launch_gerrit():
                 cmd = tools['scr'] + " --db-user-out=%s --db-password-out=%s --db-database-out=%s -d %s -b %s -u %s %s >> %s 2>&1" \
                             % (db_user, db_pass, database, str(delay), backend, project, flags, log_file)
             else:
-                main_log.info("[SKIPPED] bicho (gerrit) not executed. Backend %s not found." % backend)
+                main_log.info("[skipped] bicho (gerrit) not executed. Backend %s not found." % backend)
                 return
 
             gerrit_log.info(cmd)
@@ -678,9 +678,9 @@ def launch_gerrit():
             # post-scripts
             launch_post_tool_scripts('gerrit')
         else:
-            main_log.info("[SKIPPED] bicho (gerrit) not executed")
+            main_log.info("[skipped] bicho (gerrit) not executed")
     else:
-        main_log.info("[SKIPPED] bicho (gerrit) not executed, no conf available")
+        main_log.info("[skipped] bicho (gerrit) not executed, no conf available")
 
 def launch_mlstats():
     if options.has_key('mlstats'):
@@ -723,9 +723,9 @@ def launch_mlstats():
             # post-scripts
             launch_post_tool_scripts('mlstats')
         else:
-            main_log.info("[SKIPPED] mlstats not executed")
+            main_log.info("[skipped] mlstats not executed")
     else:
-        main_log.info("[SKIPPED] mlstats was not executed, no conf available")
+        main_log.info("[skipped] mlstats was not executed, no conf available")
 
 def launch_irc():
     if options.has_key('irc'):
@@ -774,9 +774,9 @@ def launch_irc():
             # post-scripts
             launch_post_tool_scripts('irc')
         else:
-            main_log.info("[SKIPPED] irc_analysis not executed")
+            main_log.info("[skipped] irc_analysis not executed")
     else:
-        main_log.info("[SKIPPED] irc_analysis was not executed, no conf available")
+        main_log.info("[skipped] irc_analysis was not executed, no conf available")
 
 
 def launch_mediawiki():
@@ -788,9 +788,9 @@ def launch_mediawiki():
         elif backend == 'confluence':
             launch_confluence_analysis()
         else:
-            main_log.info("[SKIPPED] mediawiki %s backend not available" % backend)
+            main_log.info("[skipped] mediawiki %s backend not available" % backend)
     else:
-        main_log.info("[SKIPPED] mediawiki was not executed, no conf available")
+        main_log.info("[skipped] mediawiki was not executed, no conf available")
 
 
 def launch_mediawiki_analysis():
@@ -825,9 +825,9 @@ def launch_mediawiki_analysis():
             # post-scripts
             launch_post_tool_scripts('mediawiki')
         else:
-            main_log.info("[SKIPPED] mediawiki_analysis not executed")
+            main_log.info("[skipped] mediawiki_analysis not executed")
     else:
-        main_log.info("[SKIPPED] mediawiki_analysis was not executed, no conf available")
+        main_log.info("[skipped] mediawiki_analysis was not executed, no conf available")
 
 
 def launch_confluence_analysis():
@@ -863,9 +863,9 @@ def launch_confluence_analysis():
             # post-scripts
             launch_post_tool_scripts('mediawiki')
         else:
-            main_log.info("[SKIPPED] confluence_analysis not executed")
+            main_log.info("[skipped] confluence_analysis not executed")
     else:
-        main_log.info("[SKIPPED] confluence_analysis was not executed, no conf available")
+        main_log.info("[skipped] confluence_analysis was not executed, no conf available")
 
 
 def launch_downloads():
@@ -915,9 +915,9 @@ def launch_sibyl():
         if launched:
             main_log.info("[OK] sibyl executed")
         else:
-            main_log.info("[SKIPPED] sibyl not executed")
+            main_log.info("[skipped] sibyl not executed")
     else:
-        main_log.info("[SKIPPED] sibyl was not executed, no conf available")
+        main_log.info("[skipped] sibyl was not executed, no conf available")
 
 def pull_directory(path):
 
@@ -1032,9 +1032,9 @@ def launch_octopus_puppet():
 
             launch_post_tool_scripts('octopus_puppet')
         else:
-            main_log.info("[SKIPPED] octopus for puppet not executed")
+            main_log.info("[skipped] octopus for puppet not executed")
     else:
-        main_log.info("[SKIPPED] octopus for puppet was not executed, no conf available")
+        main_log.info("[skipped] octopus for puppet was not executed, no conf available")
 
 
 def launch_octopus_docker():
@@ -1079,9 +1079,9 @@ def launch_octopus_docker():
 
             launch_post_tool_scripts('octopus_docker')
         else:
-            main_log.info("[SKIPPED] octopus for docker not executed")
+            main_log.info("[skipped] octopus for docker not executed")
     else:
-        main_log.info("[SKIPPED] octopus for docker was not executed, no conf available")
+        main_log.info("[skipped] octopus for docker was not executed, no conf available")
 
 
 def launch_octopus_github():
@@ -1163,9 +1163,9 @@ def launch_octopus_github():
 
             launch_post_tool_scripts('octopus_github')
         else:
-            main_log.info("[SKIPPED] octopus for github not executed")
+            main_log.info("[skipped] octopus for github not executed")
     else:
-        main_log.info("[SKIPPED] octopus for github was not executed, no conf available")
+        main_log.info("[skipped] octopus for github was not executed, no conf available")
 
 
 def launch_octopus_gerrit():
@@ -1209,7 +1209,7 @@ def launch_octopus_gerrit():
             launch_octopus_export(export_cmd, 'gerrit')
 
     if not launched:
-        main_log.info("[SKIPPED] octopus for gerrit not executed")
+        main_log.info("[skipped] octopus for gerrit not executed")
 
 
 def check_sortinghat_db(db_user, db_pass, db_name):
@@ -1489,9 +1489,9 @@ def launch_pullpo():
         if launched:
             main_log.info("[OK] pullpo executed")
         else:
-            main_log.info("[SKIPPED] pullpo not executed")
+            main_log.info("[skipped] pullpo not executed")
     else:
-        main_log.info("[SKIPPED] pullpo was not executed, no conf available")
+        main_log.info("[skipped] pullpo was not executed, no conf available")
 
 def launch_eventizer():
     # check if eventizer option exists
@@ -1508,13 +1508,13 @@ def launch_eventizer():
         if 'key' not in options['eventizer']:
             msg = "Metup API key not provided. Use 'key' parameter to set one."
             logging.error('[eventizer] ' + msg)
-            main_log.info("[SKIPPED] eventizer not executed. %s" % msg)
+            main_log.info("[skipped] eventizer not executed. %s" % msg)
             return
 
         if 'groups' not in options['eventizer']:
             msg = "Groups list not provided. Use 'groups' parameter to set one."
             logging.error('[eventizer] ' + msg)
-            main_log.info("[SKIPPED] eventizer not executed. %s" % msg)
+            main_log.info("[skipped] eventizer not executed. %s" % msg)
             return
 
         eventizer_key = options['eventizer']['key']
@@ -1549,9 +1549,9 @@ def launch_eventizer():
             # post-scripts
             launch_post_tool_scripts('eventizer')
         else:
-            main_log.info("[SKIPPED] eventizer not executed")
+            main_log.info("[skipped] eventizer not executed")
     else:
-        main_log.info("[SKIPPED] eventizer was not executed, no conf available")
+        main_log.info("[skipped] eventizer was not executed, no conf available")
 
 # http://code.activestate.com/recipes/577376-simple-way-to-execute-multiple-process-in-parallel/
 def exec_commands(cmds):
@@ -1640,7 +1640,7 @@ def launch_events_scripts():
         main_log.info("[OK] events generated")
 
     else:
-        main_log.info("[SKIPPED] Events not generated, no conf available")
+        main_log.info("[skipped] Events not generated, no conf available")
 
 
 def launch_metrics_scripts():
@@ -1698,7 +1698,7 @@ def launch_metrics_scripts():
 
         launch_post_tool_scripts('r')
     else:
-        main_log.info("[SKIPPED] Metrics tool was not executed, no conf available")
+        main_log.info("[skipped] Metrics tool was not executed, no conf available")
 
 def get_ds_identities_cmd(db, type):
     idir = identities_dir
@@ -1769,7 +1769,7 @@ def launch_identity_scripts():
 
         logging.info("[OK] Identity scripts executed")
     else:
-        logging.info("[SKIPPED] Unify identity scripts not executed, no conf available")
+        logging.info("[skipped] Unify identity scripts not executed, no conf available")
 
 def logs(name, size, filesNumber):
 
@@ -1959,7 +1959,7 @@ def launch_rsync():
 
         fd.close()
     else:
-        main_log.info("[SKIPPED] rsync scripts not executed, no conf available")
+        main_log.info("[skipped] rsync scripts not executed, no conf available")
 
 def write_json_config(data, filename):
     # The file should be created in project_dir

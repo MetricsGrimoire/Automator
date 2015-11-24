@@ -1782,7 +1782,7 @@ def logs(name, size, filesNumber):
     rotate_log.doRollover()
 
     # formatter
-    formatter = logging.Formatter("[%(asctime)s] %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
+    formatter = logging.Formatter("[%(asctime)s] %(message)s", datefmt='%d/%b/%Y:%H:%M:%S')
     rotate_log.setFormatter(formatter)
 
     launch_log.addHandler(rotate_log)

@@ -49,8 +49,8 @@ options = {}
 
 # global var for logs
 main_log = None
-MAX_LOG_BYTES = '10000000' #10MB
-MAX_LOG_FILES = '5' #6 files (.log, .log.1, ... , .log.5)
+MAX_LOG_BYTES = 10000000 #10MB
+MAX_LOG_FILES = 5 #6 files (.log, .log.1, ... , .log.5)
 log_files = None
 
 # global var for directories
@@ -162,22 +162,22 @@ def initialize_globals(pdir):
 
     # global var for logs
     log_files = {
-        'cvsanaly' : project_dir + '/log/launch_cvsanaly.log',
-        'bicho' : project_dir + '/log/launch_bicho.log',
-        'gerrit' : project_dir + '/log/launch_gerrit.log',
-        'mlstats' : project_dir + '/log/launch_mlstats.log',
-        'irc' : project_dir + '/log/launch_irc.log',
-        'mediawiki' : project_dir + '/log/launch_mediawiki.log',
-        'confluence' : project_dir + '/log/launch_confluence.log',
-        'sibyl' : project_dir + '/log/launch_sibyl.log',
-        'octopus_puppet' : project_dir + '/log/launch_octopus_puppet.log',
-        'octopus_docker' : project_dir + '/log/launch_octopus_docker.log',
-        'octopus_github' : project_dir + '/log/launch_octopus_github.log',
-        'sortinghat_affiliations' : project_dir + '/log/launch_sortinghat_affiliations.log',
-        'sortinghat' : project_dir + '/log/launch_sortinghat.log',
-        'pullpo' : project_dir + '/log/launch_pullpo.log',
-        'eventizer' : project_dir + '/log/launch_eventizer.log',
-        'identities' : project_dir + '/log/launch_identities.log',
+        'cvsanaly' : project_dir + '/log/retrieval_cvsanaly.log',
+        'bicho' : project_dir + '/log/retrieval_bicho.log',
+        'gerrit' : project_dir + '/log/retrieval_gerrit.log',
+        'mlstats' : project_dir + '/log/retrieval_mlstats.log',
+        'irc' : project_dir + '/log/retrieval_irc.log',
+        'mediawiki' : project_dir + '/log/retrieval_mediawiki.log',
+        'confluence' : project_dir + '/log/retrieval_confluence.log',
+        'sibyl' : project_dir + '/log/retrieval_sibyl.log',
+        'octopus_puppet' : project_dir + '/log/retrieval_octopus_puppet.log',
+        'octopus_docker' : project_dir + '/log/retrieval_octopus_docker.log',
+        'octopus_github' : project_dir + '/log/retrieval_octopus_github.log',
+        'sortinghat_affiliations' : project_dir + '/log/sortinghat_affiliations.log',
+        'sortinghat' : project_dir + '/log/sortinghat.log',
+        'pullpo' : project_dir + '/log/retrieval_pullpo.log',
+        'eventizer' : project_dir + '/log/retrieval_eventizer.log',
+        'identities' : project_dir + '/log/identities.log',
     }
 
 def read_main_conf():
@@ -1608,7 +1608,7 @@ def launch_events_scripts():
 
         json_dir = '../../../json'
         conf_file = project_dir + '/conf/main.conf'
-        log_file = project_dir + '/log/launch-'
+        log_file = project_dir + '/log/analysis_'
 
         metrics_tool = "report_tool.py"
         path = r_dir
@@ -1658,7 +1658,7 @@ def launch_metrics_scripts():
         json_dir = '../../../json'
         metrics_dir = '../vizgrimoire/metrics'
         conf_file = project_dir + '/conf/main.conf'
-        log_file = project_dir + '/log/launch-'
+        log_file = project_dir + '/log/analysis_'
 
 
         metrics_tool = "report_tool.py"
@@ -1778,7 +1778,8 @@ def logs(name, size, filesNumber):
     launch_log.setLevel(logging.DEBUG)
 
     # rotating handler
-    rotate_log = logging.handlers.RotatingFileHandler(name, maxBytes=size, backupCount=filesNumber)
+    rotate_log = logging.handlers.RotatingFileHandler(name, backupCount=filesNumber)
+    rotate_log.doRollover()
 
     # formatter
     formatter = logging.Formatter("[%(asctime)s] %(message)s", datefmt='%Y-%m-%d %H:%M:%S')

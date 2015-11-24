@@ -2127,20 +2127,30 @@ tasks_order = tasks_order_parallel
 
 if __name__ == '__main__':
     try:
-        logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s')
         opt = get_options()
         initialize_globals(opt.project_dir)
-        main_log = logs(msg_body, MAX_LOG_BYTES, MAX_LOG_FILES)
 
         pid = str(os.getpid())
         pidfile = os.path.join(opt.project_dir, "launch.pid")
 
         if os.path.isfile(pidfile):
-            print_std("%s already exists, launch process seems to be running. Exiting .." % pidfile)
-            sys.exit(1)
+            # pid file could be wrong
+            fd = open(pidfile, "r")
+            written_pid = fd.read()
+            fd.close()
+            try:
+                os.kill(int(written_pid), 0)
+                print("%s already running pid %s\nExiting .."
+                    % (pidfile, str(written_pid)))
+                sys.exit(1)
+            except OSError:
+                # it is not running, we overwrite the pid
+                file(pidfile, 'w').write(pid)
         else:
+            # no pid file, let's create it
             file(pidfile, 'w').write(pid)
 
+        main_log = logs(msg_body, MAX_LOG_BYTES, MAX_LOG_FILES)
         main_log.info("Starting ..")
         read_main_conf()
         check_tools()

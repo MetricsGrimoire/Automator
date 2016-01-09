@@ -695,7 +695,7 @@ def launch_mlstats():
         # Retrieving mailing lists
         if options['mlstats'].has_key('mailing_lists'):
             mlists = options['mlstats']['mailing_lists'].split(",")
-            mlists = [m[m.find('"')+1:m.rfind('"')] for m in mlists]
+            mlists = [m.strip(' "') for m in mlists]
         else:
             mlists = repositories(MLSTATS_MAILING_LISTS)
 

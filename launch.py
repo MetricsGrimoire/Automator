@@ -173,6 +173,7 @@ def initialize_globals(pdir):
         'octopus_puppet' : project_dir + '/log/retrieval_octopus_puppet.log',
         'octopus_docker' : project_dir + '/log/retrieval_octopus_docker.log',
         'octopus_github' : project_dir + '/log/retrieval_octopus_github.log',
+        'octopus_gerrit' : project_dir + '/log/retrieval_octopus_gerrit.log',
         'sortinghat_affiliations' : project_dir + '/log/sortinghat_affiliations.log',
         'sortinghat' : project_dir + '/log/sortinghat.log',
         'pullpo' : project_dir + '/log/retrieval_pullpo.log',
